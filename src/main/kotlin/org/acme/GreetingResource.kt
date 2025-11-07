@@ -10,5 +10,5 @@ class GreetingResource {
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)
-    fun hello() = "Hello from Quarkus"
+    fun hello() = "Hello from Quarkus REST 2"
 }

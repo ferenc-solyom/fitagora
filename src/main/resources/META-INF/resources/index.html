@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Ferenc Solyom | API Explorer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div class="page">
+    <header>
+        <div class="brand">
+            <div class="brand-avatar">SF</div>
+            <div class="brand-text">
+                <span class="brand-text-main">Ferenc Solyom</span>
+                <span class="brand-text-sub">Senior Java | Kotlin Engineer · API &amp; backend</span>
+            </div>
+        </div>
+        <div class="social">
+            <a href="https://www.linkedin.com/in/ferenc-solyom/" target="_blank" rel="noopener noreferrer">
+                <span>💼</span> <span>LinkedIn</span>
+            </a>
+        </div>
+        <div class="env-badge">API Explorer · OpenAPI-backed</div>
+    </header>
+
+    <section class="card">
+        <div class="card-header">
+            <div>
+                <h1>API Explorer</h1>
+                <p>Endpoints discovered from the live OpenAPI specification exposed by this Quarkus service.</p>
+            </div>
+            <div class="actions">
+                <a href="/q/swagger-ui" target="_blank" class="btn btn-primary">
+                    <span class="icon">📘</span>
+                    <span>Swagger UI</span>
+                </a>
+                <a href="/q/openapi?format=json" target="_blank" class="btn btn-ghost">
+                    <span class="icon">🧾</span>
+                    <span>OpenAPI JSON</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="toolbar">
+            <div class="filter-wrapper">
+                <span class="filter-icon">🔍</span>
+                <input
+                        id="filter"
+                        class="filter-input"
+                        type="text"
+                        placeholder="Filter by path or summary..."
+                        autocomplete="off"
+                />
+            </div>
+            <span id="endpoint-count" class="endpoint-count"></span>
+        </div>
+
+        <div id="loading" class="loading">Loading endpoints from OpenAPI…</div>
+        <div id="error" class="error" style="display:none;"></div>
+
+        <div class="table-wrapper" id="table-wrapper" style="display:none;">
+            <table>
+                <thead>
+                <tr>
+                    <th style="width: 90px;">Method</th>
+                    <th style="width: 220px;">Path</th>
+                    <th>Summary</th>
+                    <th style="width: 160px;">Tags</th>
+                </tr>
+                </thead>
+                <tbody id="endpoints-body"></tbody>
+            </table>
+        </div>
+    </section>
+</div>
+
+<script src="/app.js"></script>
+</body>
+</html>
