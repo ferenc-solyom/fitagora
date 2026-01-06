@@ -63,10 +63,21 @@ Deploy to AWS ECS with Application Load Balancer for a stable endpoint.
 
 ```bash
 npm install
-npx tsx deploy-AWS-ecs.ts
+npx tsx deploy-AWS-ECS.ts
 ```
 
-See [AWS_README.md](AWS_README.md) for detailed setup, AWS terminology, and configuration.
+See [AWS-ECS_README.md](AWS-ECS_README.md) for detailed setup, AWS terminology, and configuration.
+
+### AWS (Lambda)
+
+Deploy to AWS Lambda for serverless, pay-per-request pricing.
+
+```bash
+npm install
+npx tsx deploy-AWS-Lambda.ts
+```
+
+See [AWS-LAMBDA_README.md](AWS-LAMBDA_README.md) for detailed setup and configuration.
 
 ### GCP (Cloud Run)
 

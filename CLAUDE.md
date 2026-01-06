@@ -1,54 +1,133 @@
-# CLAUDE.md
+# CLAUDE.md — Project Instructions
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+## Scope
+This repository contains:
+- Backend: Quarkus (Kotlin)
+- Frontend: React (TypeScript)
+- Infrastructure: AWS ECS, AWS Lambda, and GCP
 
-## Project Overview
+Claude must treat this as a **production system**. Favor correctness, maintainability, and explicit tradeoffs over convenience.
 
-Quarkus REST application written in Kotlin. Uses Gradle for build management.
+---
 
-## Build Commands
+## General Behavior Rules
+- Be direct and factual.
+- Do not use politeness padding, motivational language, or emotional tone.
+- Do not agree by default. Challenge incorrect assumptions.
+- Point out design flaws, edge cases, and hidden costs.
+- Prefer clarity over brevity, but avoid unnecessary explanation.
+- If a request is underspecified or internally inconsistent, say so.
 
-```bash
-# Run in dev mode with live reload
-./gradlew quarkusDev
+---
 
-# Build the application
-./gradlew build
+## Language & Stack Rules
 
-# Run tests
-./gradlew test
+### Backend
+- Language: **Kotlin**
+- Framework: **Quarkus**
+- Java version: **17+**
+- Prefer immutable data structures.
+- Use `data class` for DTOs.
+- Avoid reflection-heavy patterns unless required by Quarkus.
+- Favor explicit configuration over magic defaults.
 
-# Run a single test class
-./gradlew test --tests "org.acme.GreetingResourceTest"
+Do **not**:
+- Introduce Spring abstractions or patterns.
+- Use blocking I/O in reactive paths.
+- Assume JVM tuning is unnecessary.
 
-# Run a single test method
-./gradlew test --tests "org.acme.GreetingResourceTest.testHelloEndpoint"
+### Frontend
+- Language: **TypeScript only**
+- Framework: **React**
+- Use functional components.
+- Prefer explicit types over inference at boundaries (API, state, props).
+- Avoid `any`. If unavoidable, justify its use.
 
-# Build über-jar
-./gradlew build -Dquarkus.package.jar.type=uber-jar
+Do **not**:
+- Write JavaScript examples.
+- Mix class components with hooks.
+- Assume browser-only execution if code may run in SSR or Lambda.
 
-# Build native executable (requires GraalVM)
-./gradlew build -Dquarkus.native.enabled=true
-```
+---
 
-## Tech Stack
+## API & Contracts
+- APIs are contract-first.
+- Assume frontend and backend evolve independently.
+- Explicitly version APIs.
+- Validate inputs at boundaries.
+- Do not trust frontend input.
 
-- **Kotlin** with JVM target 21
-- **Quarkus 3.26.3** - REST framework
-- **Quarkus REST** (quarkus-rest) - JAX-RS implementation
-- **SmallRye OpenAPI + Swagger UI** - API documentation available at `/q/swagger-ui` in dev mode
-- **REST Assured** - Integration testing
-- **JUnit 5** - Test framework with `@QuarkusTest` annotation
+If an API design is ambiguous, propose a concrete schema instead of guessing.
 
-## Dev Mode URLs
+---
 
-- Application: http://localhost:8080
-- Dev UI: http://localhost:8080/q/dev/
-- Swagger UI: http://localhost:8080/q/swagger-ui/
+## Cloud & Deployment Constraints
 
-## Code Structure
+### AWS ECS
+- Assume containerized Quarkus services.
+- Optimize for cold start and memory footprint.
+- Do not assume infinite horizontal scalability without cost analysis.
 
-- `src/main/kotlin/org/acme/` - Kotlin source code
-- `src/test/kotlin/org/acme/` - Unit/integration tests with `@QuarkusTest`
-- `src/native-test/kotlin/org/acme/` - Native image integration tests (`@QuarkusIntegrationTest`)
-- `src/main/resources/META-INF/resources/` - Static web resources served at root
+### AWS Lambda
+- Assume Kotlin Lambda cold starts are expensive.
+- Prefer native images where justified.
+- Avoid heavy frameworks inside Lambdas unless explicitly requested.
+
+### GCP
+- Do not assume feature parity with AWS.
+- Be explicit about which workloads run on GCP and why.
+
+### Multi-Cloud Reality Check
+- Treat AWS + GCP as a **deliberate complexity choice**, not a default.
+- If a design increases operational burden, call it out.
+- Do not suggest cross-cloud abstractions unless there is a clear benefit.
+
+---
+
+## Infrastructure as Code
+- Prefer declarative IaC (Terraform, CDK, Pulumi).
+- Avoid manual console steps.
+- Make region, project, and account boundaries explicit.
+
+---
+
+## Security
+- Assume zero trust between services.
+- Never log secrets.
+- Use least-privilege IAM.
+- Call out missing authentication, authorization, or audit controls.
+
+---
+
+## Testing
+- Backend: unit tests + integration tests.
+- Frontend: component-level tests for non-trivial logic.
+- Do not suggest snapshot tests as a primary strategy.
+- If tests are missing, say so explicitly.
+
+---
+
+## Documentation Expectations
+- Code must explain *why*, not *what*.
+- Avoid restating obvious framework behavior.
+- If documentation is outdated or misleading, point it out.
+
+---
+
+## What Claude Should Push Back On
+- Mixing Java and Kotlin unnecessarily.
+- Using JavaScript instead of TypeScript.
+- Over-engineered abstractions.
+- Ignoring cloud costs or operational complexity.
+- Treating Quarkus like Spring.
+- Treating Lambda like a container.
+
+---
+
+## Output Expectations
+- Provide concrete code or configuration when possible.
+- Prefer examples that compile.
+- If unsure, state uncertainty explicitly.
+- Do not hedge with vague language.
+
+End of instructions.

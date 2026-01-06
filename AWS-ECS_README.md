@@ -84,22 +84,21 @@ Fargate tasks are ephemeral. Each new task gets a fresh ENI with a new public IP
    npm install
    ```
 
-2. Create `.env` file with your AWS configuration:
+2. Create `.env` file:
    ```bash
    AWS_REGION=eu-central-1
    AWS_ACCOUNT_ID=<your-account-id>
+   ECS_CLUSTER=code-with-quarkus-cluster
+   ECS_SERVICE=code-with-quarkus-service
+   ALB_NAME=code-with-quarkus-alb
    SUBNET_IDS=<subnet-1>,<subnet-2>
    SECURITY_GROUP_IDS=<sg-id>
    ```
 
-   Get subnet IDs:
+   Get subnet/security group IDs:
    ```bash
-   aws ec2 describe-subnets --region eu-central-1 --query 'Subnets[*].[SubnetId,AvailabilityZone]' --output table
-   ```
-
-   Get security group IDs:
-   ```bash
-   aws ec2 describe-security-groups --region eu-central-1 --query 'SecurityGroups[*].[GroupId,GroupName]' --output table
+   aws ec2 describe-subnets --query 'Subnets[*].[SubnetId,AvailabilityZone]' --output table
+   aws ec2 describe-security-groups --query 'SecurityGroups[*].[GroupId,GroupName]' --output table
    ```
 
 ## Deploy
@@ -125,23 +124,14 @@ npm run deploy
 
 ## Access your application
 
-The deployment script outputs the ALB DNS name. Access your app at:
-
-```
-http://<ALB_DNS_NAME>/hello
-```
-
-Get the ALB DNS name:
-```bash
-aws elbv2 describe-load-balancers --names code-with-quarkus-alb --region eu-central-1 --query 'LoadBalancers[0].DNSName' --output text
-```
-
-### Get task public IP (legacy, changes on restart)
+The deployment script outputs the ALB DNS name. Or get it with: `source .env`
 
 ```bash
-TASK_ARN=$(aws ecs list-tasks --cluster code-with-quarkus-cluster --service-name code-with-quarkus-service --region eu-central-1 --query 'taskArns[0]' --output text) && \
-ENI_ID=$(aws ecs describe-tasks --cluster code-with-quarkus-cluster --tasks "$TASK_ARN" --region eu-central-1 --query 'tasks[0].attachments[0].details[?name==`networkInterfaceId`].value' --output text) && \
-aws ec2 describe-network-interfaces --network-interface-ids "$ENI_ID" --region eu-central-1 --query 'NetworkInterfaces[0].Association.PublicIp' --output text
+# Get ALB DNS
+aws elbv2 describe-load-balancers --names $ALB_NAME --region $AWS_REGION --query 'LoadBalancers[0].DNSName' --output text
+
+# Get task public IP (changes on restart)
+TASK=$(aws ecs list-tasks --cluster $ECS_CLUSTER --service-name $ECS_SERVICE --region $AWS_REGION --query 'taskArns[0]' --output text) && ENI=$(aws ecs describe-tasks --cluster $ECS_CLUSTER --tasks "$TASK" --region $AWS_REGION --query 'tasks[0].attachments[0].details[?name==`networkInterfaceId`].value' --output text) && aws ec2 describe-network-interfaces --network-interface-ids "$ENI" --region $AWS_REGION --query 'NetworkInterfaces[0].Association.PublicIp' --output text
 ```
 
 ## Resources created
@@ -152,3 +142,36 @@ aws ec2 describe-network-interfaces --network-interface-ids "$ENI_ID" --region e
 - ALB: `code-with-quarkus-alb`
 - Target group: `code-with-quarkus-tg`
 - CloudWatch log group: `/ecs/code-with-quarkus`
+
+## Cost Warning
+
+**ECS Fargate + ALB costs ~$30/month running 24/7, even with zero traffic.** Stop the service when not in use.
+
+## Start and Stop Service
+
+Load env vars first:
+```bash
+source .env
+```
+
+Stop service:
+```bash
+aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE --desired-count 0 --region $AWS_REGION
+```
+
+Start service:
+```bash
+aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE --desired-count 1 --region $AWS_REGION
+```
+
+Check status (ACTIVE=service exists, running:0=no cost):
+```bash
+aws ecs describe-services --cluster $ECS_CLUSTER --services $ECS_SERVICE --region $AWS_REGION --query 'services[0].{status:status,desired:desiredCount,running:runningCount}'
+```
+
+Delete ALB (to fully stop costs when service is stopped):
+```bash
+aws elbv2 delete-load-balancer --load-balancer-arn $(aws elbv2 describe-load-balancers --names $ALB_NAME --region $AWS_REGION --query 'LoadBalancers[0].LoadBalancerArn' --output text) --region $AWS_REGION
+```
+
+If ALB was deleted, redeploy to recreate: `npx tsx deploy-AWS-ecs.ts`
