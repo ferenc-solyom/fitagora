@@ -1,4 +1,29 @@
-# code-with-quarkus
+# FitAgora
+
+A second-hand fitness equipment marketplace built with Kotlin/Quarkus and React/TypeScript.
+
+## Tech Stack
+
+**Backend:** Kotlin, Quarkus 3.26, RESTEasy Reactive, Jackson
+**Frontend:** React 18, TypeScript, Vite
+
+## Running Locally
+
+**Backend:**
+```bash
+./gradlew quarkusDev
+```
+Runs at http://localhost:8080 (Swagger UI at `/q/swagger-ui`)
+
+**Frontend:**
+```bash
+cd frontend
+npm install
+npm run dev
+```
+Runs at http://localhost:3000
+
+## Quarkus
 
 This project uses Quarkus, the Supersonic Subatomic Java Framework.
 

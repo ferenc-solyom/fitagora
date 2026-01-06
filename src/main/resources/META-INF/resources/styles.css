@@ -337,6 +337,36 @@ a:hover {
     color: #b91c1c;
 }
 
+.site-footer {
+    margin-top: 2rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border);
+    text-align: center;
+}
+
+.footer-content {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.footer-author {
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--accent-soft);
+    padding: 0.25rem 0.65rem;
+    border-radius: 999px;
+    transition: all 0.2s ease;
+}
+
+.footer-author:hover {
+    background: var(--accent);
+    color: #f9fafb;
+    text-decoration: none;
+}
+
 @media (max-width: 640px) {
     header {
         flex-direction: column;

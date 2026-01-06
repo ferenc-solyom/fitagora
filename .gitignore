@@ -35,11 +35,15 @@ nb-configuration.xml
 # Local environment
 .env
 .env.*
-.ai
 
-# Node.js
+# Backend swagger UI
 node_modules/
 package-lock.json
+
+# Frontend
+frontend/node_modules
+frontend/dist
+frontend/package-lock.json
 
 # Plugin directory
 /.quarkus/cli/plugins/
