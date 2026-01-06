@@ -53,14 +53,27 @@ You can then execute your native executable with: `./build/code-with-quarkus-1.0
 
 If you want to learn more about building native executables, please consult <https://quarkus.io/guides/gradle-tooling>.
 
-## Related Guides
+## Cloud Deployment
 
-- Kotlin ([guide](https://quarkus.io/guides/kotlin)): Write your services in Kotlin
+This application can be deployed to:
 
-## Provided Code
+### AWS (ECS Fargate)
 
-### REST
+Deploy to AWS ECS with Application Load Balancer for a stable endpoint.
 
-Easily start your REST Web Services
+```bash
+npm install
+npx tsx deploy-AWS-ecs.ts
+```
 
-[Related guide section...](https://quarkus.io/guides/getting-started-reactive#reactive-jax-rs-resources)
+See [AWS_README.md](AWS_README.md) for detailed setup, AWS terminology, and configuration.
+
+### GCP (Cloud Run)
+
+Deploy to Google Cloud Run for fully managed serverless containers.
+
+```bash
+./deploy-GCP.sh
+```
+
+See [GCP_README.md](GCP_README.md) for detailed setup, GCP terminology, and configuration.
