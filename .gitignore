@@ -1,6 +1,7 @@
 # Gradle
 .gradle/
 build/
+backend/build/
 
 # Eclipse
 .project
@@ -33,8 +34,7 @@ nb-configuration.xml
 *.rej
 
 # Local environment
-.env
-.env.*
+deploy/AWS/.env
 
 # Backend swagger UI
 node_modules/

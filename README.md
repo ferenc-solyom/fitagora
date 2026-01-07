@@ -11,9 +11,9 @@ A second-hand fitness equipment marketplace built with Kotlin/Quarkus and React/
 
 **Backend:**
 ```bash
-./gradlew quarkusDev
+./gradlew :backend:quarkusDev
 ```
-Runs at http://localhost:8080 (Swagger UI at `/q/swagger-ui`)
+Runs at http://localhost:8080 (Swagger UI)
 
 **Frontend:**
 ```bash
@@ -22,12 +22,6 @@ npm install
 npm run dev
 ```
 Runs at http://localhost:3000
-
-## Quarkus
-
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
-
-If you want to learn more about Quarkus, please visit its website: <https://quarkus.io/>.
 
 ## Running the application in dev mode
 
@@ -91,7 +85,7 @@ npm install
 npx tsx deploy-AWS-ECS.ts
 ```
 
-See [AWS-ECS_README.md](AWS-ECS_README.md) for detailed setup, AWS terminology, and configuration.
+See [AWS-ECS_README.md](deploy/AWS/AWS-ECS_README.md) for detailed setup, AWS terminology, and configuration.
 
 ### AWS (Lambda)
 
@@ -102,7 +96,7 @@ npm install
 npx tsx deploy-AWS-Lambda.ts
 ```
 
-See [AWS-LAMBDA_README.md](AWS-LAMBDA_README.md) for detailed setup and configuration.
+See [AWS-LAMBDA_README.md](deploy/AWS/AWS-LAMBDA_README.md) for detailed setup and configuration.
 
 ### GCP (Cloud Run)
 
@@ -112,4 +106,4 @@ Deploy to Google Cloud Run for fully managed serverless containers.
 ./deploy-GCP.sh
 ```
 
-See [GCP_README.md](GCP_README.md) for detailed setup, GCP terminology, and configuration.
+See [GCP_README.md](deploy/GCP/GCP_README.md) for detailed setup, GCP terminology, and configuration.

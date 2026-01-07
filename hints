@@ -1,0 +1,2 @@
+# Check cannonical name (CNAME)
+nslookup www.fitagora.site
