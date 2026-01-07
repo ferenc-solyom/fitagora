@@ -104,7 +104,7 @@ Fargate tasks are ephemeral. Each new task gets a fresh ENI with a new public IP
 ## Deploy
 
 ```bash
-npx tsx deploy-AWS-ecs.ts
+npx tsx deploy-AWS-ECS.ts
 ```
 
 Or use npm script:

@@ -10,7 +10,6 @@ repositories {
 }
 
 dependencies {
-    implementation 'io.quarkus:quarkus-amazon-lambda-http'
     implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
     implementation 'io.quarkus:quarkus-kotlin'
     implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
@@ -21,6 +20,10 @@ dependencies {
     implementation 'io.quarkus:quarkus-smallrye-openapi'
     implementation 'io.quarkus:quarkus-swagger-ui'
 
+    // Lambda extension only for AWS Lambda deployments
+    if (project.hasProperty('target') && project.property('target') == 'lambda') {
+        implementation 'io.quarkus:quarkus-amazon-lambda-http'
+    }
 
     testImplementation 'io.quarkus:quarkus-junit5'
     testImplementation 'io.rest-assured:rest-assured'

@@ -54,8 +54,13 @@ import {
   DescribeSubnetsCommand,
 } from "@aws-sdk/client-ec2";
 import { execSync } from "child_process";
+import * as path from "path";
+import { fileURLToPath } from "url";
 
 const APP_NAME = "code-with-quarkus";
+const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
+const PROJECT_ROOT = path.resolve(SCRIPT_DIR, "../..");
+const BACKEND_DIR = path.resolve(PROJECT_ROOT, "backend");
 const REGION = process.env.AWS_REGION || "us-east-1";
 const CLUSTER_NAME = `${APP_NAME}-cluster`;
 const SERVICE_NAME = `${APP_NAME}-service`;
@@ -96,13 +101,15 @@ async function loginToEcr(): Promise<void> {
 
 function buildAndPushImage(repositoryUri: string): string {
   const imageTag = `${repositoryUri}:latest`;
+  const gradlew = path.join(PROJECT_ROOT, "gradlew");
 
   console.log("Building application...");
-  execSync("./gradlew build", { stdio: "inherit" });
+  execSync(`"${gradlew}" :backend:quarkusBuild`, { stdio: "inherit", cwd: PROJECT_ROOT });
 
   console.log("Building Docker image...");
   execSync(`docker build -f src/main/docker/Dockerfile.jvm -t ${imageTag} .`, {
     stdio: "inherit",
+    cwd: BACKEND_DIR,
   });
 
   console.log("Pushing image to ECR...");
@@ -226,8 +233,8 @@ async function registerTaskDefinition(imageUri: string): Promise<string> {
       family: APP_NAME,
       networkMode: "awsvpc",
       requiresCompatibilities: ["FARGATE"],
-      cpu: "256",
-      memory: "512",
+      cpu: "512",
+      memory: "1024",
       executionRoleArn: `arn:aws:iam::${process.env.AWS_ACCOUNT_ID}:role/ecsTaskExecutionRole`,
       containerDefinitions: [
         {
@@ -235,6 +242,9 @@ async function registerTaskDefinition(imageUri: string): Promise<string> {
           image: imageUri,
           portMappings: [{ containerPort: 8080, protocol: "tcp" }],
           essential: true,
+          environment: [
+            { name: "QUARKUS_PROFILE", value: "ecs" },
+          ],
           logConfiguration: {
             logDriver: "awslogs",
             options: {

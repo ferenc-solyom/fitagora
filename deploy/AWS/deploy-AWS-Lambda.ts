@@ -25,7 +25,9 @@ import {
     CreateApiCommand,
     GetApisCommand,
     CreateIntegrationCommand,
+    DeleteIntegrationCommand,
     CreateRouteCommand,
+    DeleteRouteCommand,
     CreateStageCommand,
     GetIntegrationsCommand,
     GetRoutesCommand,
@@ -35,6 +37,11 @@ import { STSClient, GetCallerIdentityCommand } from "@aws-sdk/client-sts";
 import { execSync } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
+import { fileURLToPath } from "url";
+
+const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
+const PROJECT_ROOT = path.resolve(SCRIPT_DIR, "../..");
+const BACKEND_DIR = path.resolve(PROJECT_ROOT, "backend");
 
 const REGION = process.env.AWS_REGION || "eu-central-1";
 const FUNCTION_NAME = process.env.LAMBDA_FUNCTION || "code-with-quarkus";
@@ -93,14 +100,16 @@ async function getOrCreateRole(accountId: string): Promise<string> {
 
 function buildApplication(): Buffer {
     console.log("Building Quarkus application for Lambda...");
-    execSync("./gradlew build -Dquarkus.package.jar.type=legacy-jar", {
+    const gradlew = path.join(PROJECT_ROOT, "gradlew");
+    execSync(`"${gradlew}" :backend:quarkusBuild -Ptarget=lambda -Dquarkus.package.jar.type=legacy-jar`, {
         stdio: "inherit",
+        cwd: PROJECT_ROOT,
     });
 
-    const zipPath = path.join(process.cwd(), "build", "function.zip");
+    const zipPath = path.join(BACKEND_DIR, "build", "function.zip");
     if (!fs.existsSync(zipPath)) {
         throw new Error(
-            "function.zip not found. Ensure quarkus-amazon-lambda-http is added and build produced build/function.zip."
+            "function.zip not found. Ensure quarkus-amazon-lambda-http is added and build produced backend/build/function.zip."
         );
     }
 
@@ -167,14 +176,31 @@ async function ensureIntegration(apiId: string, lambdaArn: string): Promise<stri
         (i) => i.IntegrationType === "AWS_PROXY" && i.IntegrationUri === lambdaArn
     );
 
-    if (existing?.IntegrationId) return existing.IntegrationId;
+    // Delete existing integration if payload format doesn't match (can't update it)
+    if (existing?.IntegrationId && existing.PayloadFormatVersion !== "2.0") {
+        console.log("Recreating integration with correct payload format...");
+
+        // Must delete routes referencing this integration first
+        const routes = await apigw.send(new GetRoutesCommand({ ApiId: apiId }));
+        const referencingRoutes = routes.Items?.filter(
+            (r) => r.Target === `integrations/${existing.IntegrationId}`
+        );
+        for (const route of referencingRoutes ?? []) {
+            if (route.RouteId) {
+                await apigw.send(new DeleteRouteCommand({ ApiId: apiId, RouteId: route.RouteId }));
+            }
+        }
+
+        await apigw.send(new DeleteIntegrationCommand({ ApiId: apiId, IntegrationId: existing.IntegrationId }));
+    } else if (existing?.IntegrationId) {
+        return existing.IntegrationId;
+    }
 
     const created = await apigw.send(
         new CreateIntegrationCommand({
             ApiId: apiId,
             IntegrationType: "AWS_PROXY",
             IntegrationUri: lambdaArn,
-            // If 2.0 gives you payload issues later, switch to "1.0".
             PayloadFormatVersion: "2.0",
         })
     );
@@ -213,7 +239,8 @@ async function ensureDefaultStage(apiId: string): Promise<void> {
 
 async function ensureLambdaInvokePermission(apiId: string, accountId: string): Promise<void> {
     // Match this API only (avoids stale permissions when API gets recreated)
-    const sourceArn = `arn:aws:execute-api:${REGION}:${accountId}:${apiId}/*/*/*`;
+    // HTTP API uses simpler ARN pattern than REST API
+    const sourceArn = `arn:aws:execute-api:${REGION}:${accountId}:${apiId}/*`;
     const statementId = `AllowApigwInvoke-${apiId}`;
 
     try {

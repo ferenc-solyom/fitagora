@@ -53,7 +53,7 @@ npx tsx deploy-AWS-Lambda.ts
 
 The deployment script outputs the HTTP API URL:
 ```
-https://<api-id>.execute-api.<region>.amazonaws.com/hello
+https://<api-id>.execute-api.<region>.amazonaws.com
 ```
 
 Get API URL manually:
