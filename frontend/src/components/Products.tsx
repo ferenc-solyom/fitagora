@@ -94,7 +94,7 @@ export function Products({ onOrderCreated }: ProductsProps) {
         />
         <input
           type="number"
-          placeholder="Price ($)"
+          placeholder="Price (Lei)"
           step="0.01"
           min="0.01"
           value={price}
@@ -123,7 +123,7 @@ export function Products({ onOrderCreated }: ProductsProps) {
               <tr key={product.id}>
                 <td className="id-cell">{product.id}</td>
                 <td className="name-cell">{product.name}</td>
-                <td className="price-cell">${product.price.toFixed(2)}</td>
+                <td className="price-cell">{product.price.toFixed(2)}</td>
                 <td className="actions-cell">
                   <input
                     type="number"

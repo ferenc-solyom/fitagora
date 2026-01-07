@@ -71,7 +71,7 @@ export const Orders = forwardRef<OrdersHandle>(function Orders(_, ref) {
                 <td className="id-cell">{order.id}</td>
                 <td className="id-cell">{order.productId}</td>
                 <td>{order.quantity}</td>
-                <td className="price-cell">${order.totalPrice.toFixed(2)}</td>
+                <td className="price-cell">{order.totalPrice.toFixed(2)}</td>
                 <td>
                   <button onClick={() => handleDeleteOrder(order.id)} className="delete-btn">
                     Cancel
