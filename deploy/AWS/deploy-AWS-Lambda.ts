@@ -40,6 +40,7 @@ import {
     DynamoDBClient,
     CreateTableCommand,
     DescribeTableCommand,
+    UpdateTableCommand,
     ResourceNotFoundException,
 } from "@aws-sdk/client-dynamodb";
 import { execSync } from "child_process";
@@ -159,8 +160,36 @@ async function ensureDynamoDbTable(config: TableConfig): Promise<void> {
     const { tableName, gsiAttribute, gsiName } = config;
 
     try {
-        await dynamodb.send(new DescribeTableCommand({ TableName: tableName }));
+        const describeResult = await dynamodb.send(new DescribeTableCommand({ TableName: tableName }));
         console.log(`DynamoDB table exists: ${tableName}`);
+
+        // Check if GSI exists, add if missing
+        if (gsiAttribute && gsiName) {
+            const existingGsis = describeResult.Table?.GlobalSecondaryIndexes || [];
+            const gsiExists = existingGsis.some(gsi => gsi.IndexName === gsiName);
+
+            if (!gsiExists) {
+                console.log(`Adding GSI ${gsiName} to ${tableName}...`);
+                await dynamodb.send(
+                    new UpdateTableCommand({
+                        TableName: tableName,
+                        AttributeDefinitions: [{ AttributeName: gsiAttribute, AttributeType: "S" }],
+                        GlobalSecondaryIndexUpdates: [
+                            {
+                                Create: {
+                                    IndexName: gsiName,
+                                    KeySchema: [{ AttributeName: gsiAttribute, KeyType: "HASH" }],
+                                    Projection: { ProjectionType: "ALL" },
+                                },
+                            },
+                        ],
+                    })
+                );
+                console.log(`Added GSI ${gsiName} to ${tableName} (may take a minute to become active)`);
+            } else {
+                console.log(`GSI ${gsiName} already exists on ${tableName}`);
+            }
+        }
     } catch (e) {
         if (e instanceof ResourceNotFoundException) {
             const attributeDefinitions = [{ AttributeName: "id", AttributeType: "S" }];

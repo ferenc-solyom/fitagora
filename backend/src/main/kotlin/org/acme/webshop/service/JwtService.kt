@@ -18,6 +18,7 @@ class JwtService(
     fun generateToken(user: User): String {
         return Jwt.issuer(issuer)
             .subject(user.id)
+            .groups(setOf("user"))
             .claim("email", user.email)
             .claim("firstName", user.firstName)
             .claim("lastName", user.lastName)
