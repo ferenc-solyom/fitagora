@@ -20,9 +20,14 @@ dependencies {
     implementation 'io.quarkus:quarkus-smallrye-openapi'
     implementation 'io.quarkus:quarkus-swagger-ui'
 
+    // DynamoDB support (used in Lambda deployment)
+    implementation 'io.quarkiverse.amazonservices:quarkus-amazon-dynamodb:3.10.0'
+
     // Lambda extension only for AWS Lambda deployments
     if (project.hasProperty('target') && project.property('target') == 'lambda') {
         implementation 'io.quarkus:quarkus-amazon-lambda-http'
+        // URL connection client for Lambda cold start optimization
+        implementation 'software.amazon.awssdk:url-connection-client:2.29.29'
     }
 
     testImplementation 'io.quarkus:quarkus-junit5'

@@ -1,11 +1,13 @@
 package org.acme.webshop.repository.inmemory
 
+import io.quarkus.arc.profile.UnlessBuildProfile
 import jakarta.enterprise.context.ApplicationScoped
 import org.acme.webshop.domain.Product
 import org.acme.webshop.repository.ProductRepository
 import java.util.concurrent.ConcurrentHashMap
 
 @ApplicationScoped
+@UnlessBuildProfile("lambda")
 class InMemoryProductRepository : ProductRepository {
 
     private val products = ConcurrentHashMap<String, Product>()

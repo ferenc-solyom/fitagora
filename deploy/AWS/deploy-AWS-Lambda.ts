@@ -19,6 +19,8 @@ import {
     CreateRoleCommand,
     AttachRolePolicyCommand,
     GetRoleCommand,
+    PutRolePolicyCommand,
+    GetRolePolicyCommand,
 } from "@aws-sdk/client-iam";
 import {
     ApiGatewayV2Client,
@@ -34,6 +36,12 @@ import {
     GetStagesCommand,
 } from "@aws-sdk/client-apigatewayv2";
 import { STSClient, GetCallerIdentityCommand } from "@aws-sdk/client-sts";
+import {
+    DynamoDBClient,
+    CreateTableCommand,
+    DescribeTableCommand,
+    ResourceNotFoundException,
+} from "@aws-sdk/client-dynamodb";
 import { execSync } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
@@ -52,6 +60,10 @@ const lambda = new LambdaClient({ region: REGION });
 const iam = new IAMClient({ region: REGION });
 const apigw = new ApiGatewayV2Client({ region: REGION });
 const sts = new STSClient({ region: REGION });
+const dynamodb = new DynamoDBClient({ region: REGION });
+
+const PRODUCTS_TABLE = "webshop-products";
+const ORDERS_TABLE = "webshop-orders";
 
 const ASSUME_ROLE_POLICY = JSON.stringify({
     Version: "2012-10-17",
@@ -76,7 +88,6 @@ async function getOrCreateRole(accountId: string): Promise<string> {
     try {
         await iam.send(new GetRoleCommand({ RoleName: ROLE_NAME }));
         console.log("Using existing IAM role");
-        return roleArn;
     } catch {
         await iam.send(
             new CreateRoleCommand({
@@ -94,14 +105,79 @@ async function getOrCreateRole(accountId: string): Promise<string> {
 
         console.log("Created IAM role, waiting for propagation...");
         await new Promise((resolve) => setTimeout(resolve, 10000));
-        return roleArn;
     }
+
+    await ensureDynamoDbPolicy(accountId);
+    return roleArn;
+}
+
+async function ensureDynamoDbPolicy(accountId: string): Promise<void> {
+    const policyName = "DynamoDBAccess";
+    const policyDocument = JSON.stringify({
+        Version: "2012-10-17",
+        Statement: [
+            {
+                Effect: "Allow",
+                Action: [
+                    "dynamodb:PutItem",
+                    "dynamodb:GetItem",
+                    "dynamodb:DeleteItem",
+                    "dynamodb:Scan",
+                    "dynamodb:Query",
+                ],
+                Resource: [
+                    `arn:aws:dynamodb:${REGION}:${accountId}:table/${PRODUCTS_TABLE}`,
+                    `arn:aws:dynamodb:${REGION}:${accountId}:table/${ORDERS_TABLE}`,
+                ],
+            },
+        ],
+    });
+
+    try {
+        await iam.send(new GetRolePolicyCommand({ RoleName: ROLE_NAME, PolicyName: policyName }));
+        console.log("DynamoDB IAM policy already attached");
+    } catch {
+        await iam.send(
+            new PutRolePolicyCommand({
+                RoleName: ROLE_NAME,
+                PolicyName: policyName,
+                PolicyDocument: policyDocument,
+            })
+        );
+        console.log("Attached DynamoDB IAM policy");
+    }
+}
+
+async function ensureDynamoDbTable(tableName: string): Promise<void> {
+    try {
+        await dynamodb.send(new DescribeTableCommand({ TableName: tableName }));
+        console.log(`DynamoDB table exists: ${tableName}`);
+    } catch (e) {
+        if (e instanceof ResourceNotFoundException) {
+            await dynamodb.send(
+                new CreateTableCommand({
+                    TableName: tableName,
+                    KeySchema: [{ AttributeName: "id", KeyType: "HASH" }],
+                    AttributeDefinitions: [{ AttributeName: "id", AttributeType: "S" }],
+                    BillingMode: "PAY_PER_REQUEST",
+                })
+            );
+            console.log(`Created DynamoDB table: ${tableName}`);
+        } else {
+            throw e;
+        }
+    }
+}
+
+async function ensureDynamoDbTables(): Promise<void> {
+    await ensureDynamoDbTable(PRODUCTS_TABLE);
+    await ensureDynamoDbTable(ORDERS_TABLE);
 }
 
 function buildApplication(): Buffer {
     console.log("Building Quarkus application for Lambda...");
     const gradlew = path.join(PROJECT_ROOT, "gradlew");
-    execSync(`"${gradlew}" :backend:quarkusBuild -Ptarget=lambda -Dquarkus.package.jar.type=legacy-jar`, {
+    execSync(`"${gradlew}" :backend:quarkusBuild -Ptarget=lambda -Dquarkus.profile=lambda -Dquarkus.package.jar.type=legacy-jar`, {
         stdio: "inherit",
         cwd: PROJECT_ROOT,
     });
@@ -295,6 +371,7 @@ async function deploy() {
     console.log(`Account: ${accountId}  Region: ${REGION}`);
 
     const roleArn = await getOrCreateRole(accountId);
+    await ensureDynamoDbTables();
     const zipBuffer = buildApplication();
     await deployFunction(roleArn, zipBuffer);
 

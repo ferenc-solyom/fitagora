@@ -1,11 +1,13 @@
 package org.acme.webshop.repository.inmemory
 
+import io.quarkus.arc.profile.UnlessBuildProfile
 import jakarta.enterprise.context.ApplicationScoped
 import org.acme.webshop.domain.Order
 import org.acme.webshop.repository.OrderRepository
 import java.util.concurrent.ConcurrentHashMap
 
 @ApplicationScoped
+@UnlessBuildProfile("lambda")
 class InMemoryOrderRepository : OrderRepository {
 
     private val orders = ConcurrentHashMap<String, Order>()
