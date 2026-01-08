@@ -21,5 +21,8 @@ class InMemoryOrderRepository : OrderRepository {
 
     override fun findAll(): List<Order> = orders.values.toList()
 
+    override fun findByUserId(userId: String): List<Order> =
+        orders.values.filter { it.userId == userId }
+
     override fun deleteById(id: String): Boolean = orders.remove(id) != null
 }

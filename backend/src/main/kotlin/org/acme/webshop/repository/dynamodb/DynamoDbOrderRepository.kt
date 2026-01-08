@@ -9,6 +9,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest
+import software.amazon.awssdk.services.dynamodb.model.QueryRequest
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest
 import java.math.BigDecimal
 import java.time.Instant
@@ -21,16 +22,21 @@ class DynamoDbOrderRepository(
 
     companion object {
         const val TABLE_NAME = "webshop-orders"
+        const val USER_INDEX = "user-index"
     }
 
     override fun save(order: Order): Order {
-        val item = mapOf(
+        val item = mutableMapOf(
             "id" to AttributeValue.builder().s(order.id).build(),
             "productId" to AttributeValue.builder().s(order.productId).build(),
             "quantity" to AttributeValue.builder().n(order.quantity.toString()).build(),
             "totalPrice" to AttributeValue.builder().n(order.totalPrice.toPlainString()).build(),
             "createdAt" to AttributeValue.builder().s(order.createdAt.toString()).build()
         )
+
+        order.userId?.let {
+            item["userId"] = AttributeValue.builder().s(it).build()
+        }
 
         dynamoDb.putItem(
             PutItemRequest.builder()
@@ -67,6 +73,21 @@ class DynamoDbOrderRepository(
         return response.items().map { it.toOrder() }
     }
 
+    override fun findByUserId(userId: String): List<Order> {
+        val response = dynamoDb.query(
+            QueryRequest.builder()
+                .tableName(TABLE_NAME)
+                .indexName(USER_INDEX)
+                .keyConditionExpression("userId = :userId")
+                .expressionAttributeValues(
+                    mapOf(":userId" to AttributeValue.builder().s(userId).build())
+                )
+                .build()
+        )
+
+        return response.items().map { it.toOrder() }
+    }
+
     override fun deleteById(id: String): Boolean {
         val existing = findById(id) ?: return false
 
@@ -86,6 +107,7 @@ class DynamoDbOrderRepository(
             productId = this["productId"]?.s() ?: error("Missing productId"),
             quantity = this["quantity"]?.n()?.toInt() ?: error("Missing quantity"),
             totalPrice = BigDecimal(this["totalPrice"]?.n() ?: error("Missing totalPrice")),
+            userId = this["userId"]?.s(),
             createdAt = Instant.parse(this["createdAt"]?.s() ?: error("Missing createdAt"))
         )
     }

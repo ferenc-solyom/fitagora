@@ -20,6 +20,13 @@ dependencies {
     implementation 'io.quarkus:quarkus-smallrye-openapi'
     implementation 'io.quarkus:quarkus-swagger-ui'
 
+    // JWT authentication
+    implementation 'io.quarkus:quarkus-smallrye-jwt'
+    implementation 'io.quarkus:quarkus-smallrye-jwt-build'
+
+    // Password hashing
+    implementation 'at.favre.lib:bcrypt:0.10.2'
+
     // DynamoDB support (used in Lambda deployment)
     implementation 'io.quarkiverse.amazonservices:quarkus-amazon-dynamodb:3.10.0'
 

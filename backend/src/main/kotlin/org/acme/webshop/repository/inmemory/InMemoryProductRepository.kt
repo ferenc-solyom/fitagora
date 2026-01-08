@@ -21,5 +21,8 @@ class InMemoryProductRepository : ProductRepository {
 
     override fun findAll(): List<Product> = products.values.toList()
 
+    override fun findByOwnerId(ownerId: String): List<Product> =
+        products.values.filter { it.ownerId == ownerId }
+
     override fun deleteById(id: String): Boolean = products.remove(id) != null
 }

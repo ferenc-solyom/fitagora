@@ -6,5 +6,6 @@ interface OrderRepository {
     fun save(order: Order): Order
     fun findById(id: String): Order?
     fun findAll(): List<Order>
+    fun findByUserId(userId: String): List<Order>
     fun deleteById(id: String): Boolean
 }

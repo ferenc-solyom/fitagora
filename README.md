@@ -1,109 +1,141 @@
 # FitAgora
 
-A second-hand fitness equipment marketplace built with Kotlin/Quarkus and React/TypeScript.
+A second-hand fitness equipment marketplace built with Kotlin/Quarkus and React/TypeScript. Features user authentication, product listings, and order management with multi-cloud deployment support.
+
+## Features
+
+- User registration and authentication (JWT-based)
+- Browse fitness equipment listings (public)
+- List your own equipment for sale (requires login)
+- Place orders (guest or authenticated)
+- Manage your products and order history
 
 ## Tech Stack
 
-**Backend:** Kotlin, Quarkus 3.26, RESTEasy Reactive, Jackson
-**Frontend:** React 18, TypeScript, Vite
+| Layer | Technology |
+|-------|------------|
+| Backend | Kotlin, Quarkus 3.26, RESTEasy Reactive, SmallRye JWT |
+| Frontend | React 18, TypeScript, Vite |
+| Storage | In-memory (dev), DynamoDB (Lambda) |
+| Auth | JWT with bcrypt password hashing |
 
-## Running Locally
+## Prerequisites
 
-**Backend:**
+- Java 21+
+- Node.js 18+
+- npm
+
+## Quick Start
+
+### Backend
+
 ```bash
 ./gradlew :backend:quarkusDev
 ```
-Runs at http://localhost:8080 (Swagger UI)
 
-**Frontend:**
+- API: http://localhost:8080
+- Swagger UI: http://localhost:8080/q/swagger-ui
+
+### Frontend
+
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-Runs at http://localhost:3000
 
-## Running the application in dev mode
+- App: http://localhost:3000
 
-You can run your application in dev mode that enables live coding using:
+## Environment Variables
 
-```shell script
-./gradlew quarkusDev
-```
+### Frontend
 
-> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at <http://localhost:8080/q/dev/>.
-
-## Packaging and running the application
-
-The application can be packaged using:
-
-```shell script
-./gradlew build
-```
-
-It produces the `quarkus-run.jar` file in the `build/quarkus-app/` directory.
-Be aware that it’s not an _über-jar_ as the dependencies are copied into the `build/quarkus-app/lib/` directory.
-
-The application is now runnable using `java -jar build/quarkus-app/quarkus-run.jar`.
-
-If you want to build an _über-jar_, execute the following command:
-
-```shell script
-./gradlew build -Dquarkus.package.jar.type=uber-jar
-```
-
-The application, packaged as an _über-jar_, is now runnable using `java -jar build/*-runner.jar`.
-
-## Creating a native executable
-
-You can create a native executable using:
-
-```shell script
-./gradlew build -Dquarkus.native.enabled=true
-```
-
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using:
-
-```shell script
-./gradlew build -Dquarkus.native.enabled=true -Dquarkus.native.container-build=true
-```
-
-You can then execute your native executable with: `./build/code-with-quarkus-1.0.0-SNAPSHOT-runner`
-
-If you want to learn more about building native executables, please consult <https://quarkus.io/guides/gradle-tooling>.
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `VITE_API_BASE_URL` | `http://localhost:8080` | Backend API URL |
 
 ## Cloud Deployment
 
-This application can be deployed to:
+The application supports multiple deployment targets:
 
-### AWS (ECS Fargate)
+### AWS Lambda (Serverless)
 
-Deploy to AWS ECS with Application Load Balancer for a stable endpoint.
-
-```bash
-npm install
-npx tsx deploy-AWS-ECS.ts
-```
-
-See [AWS-ECS_README.md](deploy/AWS/AWS-ECS_README.md) for detailed setup, AWS terminology, and configuration.
-
-### AWS (Lambda)
-
-Deploy to AWS Lambda for serverless, pay-per-request pricing.
+Serverless deployment with DynamoDB storage and API Gateway.
 
 ```bash
+cd deploy/AWS
 npm install
 npx tsx deploy-AWS-Lambda.ts
 ```
 
-See [AWS-LAMBDA_README.md](deploy/AWS/AWS-LAMBDA_README.md) for detailed setup and configuration.
+See [AWS-LAMBDA_README.md](deploy/AWS/AWS-LAMBDA_README.md) for details.
 
-### GCP (Cloud Run)
+### AWS ECS (Container)
 
-Deploy to Google Cloud Run for fully managed serverless containers.
+Containerized deployment with Application Load Balancer.
 
 ```bash
+cd deploy/AWS
+npm install
+npx tsx deploy-AWS-ECS.ts
+```
+
+See [AWS-ECS_README.md](deploy/AWS/AWS-ECS_README.md) for details.
+
+### GCP Cloud Run (Container)
+
+Fully managed serverless containers on Google Cloud.
+
+```bash
+cd deploy/GCP
 ./deploy-GCP.sh
 ```
 
-See [GCP_README.md](deploy/GCP/GCP_README.md) for detailed setup, GCP terminology, and configuration.
+See [GCP_README.md](deploy/GCP/GCP_README.md) for details.
+
+## Security
+
+- Passwords hashed with bcrypt (cost factor 12)
+- JWT tokens valid for 24 hours
+- CORS configured for specific origins
+- Input validation on all endpoints
+
+### JWT Keys
+
+The application requires RSA key pair for JWT token signing. **Deployment scripts automatically generate keys** if they don't exist.
+
+To generate manually (for local development):
+
+```bash
+cd backend/src/main/resources
+openssl genrsa -out privateKey.pem 2048
+openssl rsa -in privateKey.pem -pubout -out publicKey.pem
+```
+
+The private key is excluded from version control via `.gitignore`.
+
+## Author
+
+**Ferenc Solyom**
+- LinkedIn: [ferenc-solyom](https://www.linkedin.com/in/ferenc-solyom/)
+- Email: ferenc.solyom1@gmail.com
+
+## License
+
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+
+```
+Copyright 2026 Ferenc Solyom
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+```

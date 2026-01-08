@@ -55,6 +55,7 @@ import {
 } from "@aws-sdk/client-ec2";
 import { execSync } from "child_process";
 import * as path from "path";
+import * as fs from "fs";
 import { fileURLToPath } from "url";
 
 const APP_NAME = "code-with-quarkus";
@@ -99,11 +100,27 @@ async function loginToEcr(): Promise<void> {
   });
 }
 
+function ensureJwtKeys(): void {
+  const resourcesDir = path.join(BACKEND_DIR, "src", "main", "resources");
+  const privateKeyPath = path.join(resourcesDir, "privateKey.pem");
+  const publicKeyPath = path.join(resourcesDir, "publicKey.pem");
+
+  if (!fs.existsSync(privateKeyPath) || !fs.existsSync(publicKeyPath)) {
+    console.log("Generating JWT RSA key pair...");
+    execSync(`openssl genrsa -out "${privateKeyPath}" 2048`, { stdio: "inherit" });
+    execSync(`openssl rsa -in "${privateKeyPath}" -pubout -out "${publicKeyPath}"`, { stdio: "inherit" });
+    console.log("JWT keys generated");
+  } else {
+    console.log("JWT keys already exist");
+  }
+}
+
 function buildAndPushImage(repositoryUri: string): string {
   const imageTag = `${repositoryUri}:latest`;
   const gradlew = path.join(PROJECT_ROOT, "gradlew");
 
   console.log("Building application...");
+  ensureJwtKeys();
   execSync(`"${gradlew}" :backend:quarkusBuild`, { stdio: "inherit", cwd: PROJECT_ROOT });
 
   console.log("Building Docker image...");

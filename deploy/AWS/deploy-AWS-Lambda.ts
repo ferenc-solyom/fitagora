@@ -64,6 +64,7 @@ const dynamodb = new DynamoDBClient({ region: REGION });
 
 const PRODUCTS_TABLE = "webshop-products";
 const ORDERS_TABLE = "webshop-orders";
+const USERS_TABLE = "webshop-users";
 
 const ASSUME_ROLE_POLICY = JSON.stringify({
     Version: "2012-10-17",
@@ -127,42 +128,63 @@ async function ensureDynamoDbPolicy(accountId: string): Promise<void> {
                 ],
                 Resource: [
                     `arn:aws:dynamodb:${REGION}:${accountId}:table/${PRODUCTS_TABLE}`,
+                    `arn:aws:dynamodb:${REGION}:${accountId}:table/${PRODUCTS_TABLE}/index/*`,
                     `arn:aws:dynamodb:${REGION}:${accountId}:table/${ORDERS_TABLE}`,
+                    `arn:aws:dynamodb:${REGION}:${accountId}:table/${ORDERS_TABLE}/index/*`,
+                    `arn:aws:dynamodb:${REGION}:${accountId}:table/${USERS_TABLE}`,
+                    `arn:aws:dynamodb:${REGION}:${accountId}:table/${USERS_TABLE}/index/*`,
                 ],
             },
         ],
     });
 
-    try {
-        await iam.send(new GetRolePolicyCommand({ RoleName: ROLE_NAME, PolicyName: policyName }));
-        console.log("DynamoDB IAM policy already attached");
-    } catch {
-        await iam.send(
-            new PutRolePolicyCommand({
-                RoleName: ROLE_NAME,
-                PolicyName: policyName,
-                PolicyDocument: policyDocument,
-            })
-        );
-        console.log("Attached DynamoDB IAM policy");
-    }
+    // Always update the policy to ensure it has the latest resources
+    await iam.send(
+        new PutRolePolicyCommand({
+            RoleName: ROLE_NAME,
+            PolicyName: policyName,
+            PolicyDocument: policyDocument,
+        })
+    );
+    console.log("Updated DynamoDB IAM policy");
 }
 
-async function ensureDynamoDbTable(tableName: string): Promise<void> {
+interface TableConfig {
+    tableName: string;
+    gsiAttribute?: string;
+    gsiName?: string;
+}
+
+async function ensureDynamoDbTable(config: TableConfig): Promise<void> {
+    const { tableName, gsiAttribute, gsiName } = config;
+
     try {
         await dynamodb.send(new DescribeTableCommand({ TableName: tableName }));
         console.log(`DynamoDB table exists: ${tableName}`);
     } catch (e) {
         if (e instanceof ResourceNotFoundException) {
+            const attributeDefinitions = [{ AttributeName: "id", AttributeType: "S" }];
+            const globalSecondaryIndexes = [];
+
+            if (gsiAttribute && gsiName) {
+                attributeDefinitions.push({ AttributeName: gsiAttribute, AttributeType: "S" });
+                globalSecondaryIndexes.push({
+                    IndexName: gsiName,
+                    KeySchema: [{ AttributeName: gsiAttribute, KeyType: "HASH" }],
+                    Projection: { ProjectionType: "ALL" },
+                });
+            }
+
             await dynamodb.send(
                 new CreateTableCommand({
                     TableName: tableName,
                     KeySchema: [{ AttributeName: "id", KeyType: "HASH" }],
-                    AttributeDefinitions: [{ AttributeName: "id", AttributeType: "S" }],
+                    AttributeDefinitions: attributeDefinitions,
                     BillingMode: "PAY_PER_REQUEST",
+                    GlobalSecondaryIndexes: globalSecondaryIndexes.length > 0 ? globalSecondaryIndexes : undefined,
                 })
             );
-            console.log(`Created DynamoDB table: ${tableName}`);
+            console.log(`Created DynamoDB table: ${tableName}${gsiName ? ` with GSI: ${gsiName}` : ""}`);
         } else {
             throw e;
         }
@@ -170,12 +192,41 @@ async function ensureDynamoDbTable(tableName: string): Promise<void> {
 }
 
 async function ensureDynamoDbTables(): Promise<void> {
-    await ensureDynamoDbTable(PRODUCTS_TABLE);
-    await ensureDynamoDbTable(ORDERS_TABLE);
+    await ensureDynamoDbTable({
+        tableName: PRODUCTS_TABLE,
+        gsiAttribute: "ownerId",
+        gsiName: "owner-index",
+    });
+    await ensureDynamoDbTable({
+        tableName: ORDERS_TABLE,
+        gsiAttribute: "userId",
+        gsiName: "user-index",
+    });
+    await ensureDynamoDbTable({
+        tableName: USERS_TABLE,
+        gsiAttribute: "email",
+        gsiName: "email-index",
+    });
+}
+
+function ensureJwtKeys(): void {
+    const resourcesDir = path.join(BACKEND_DIR, "src", "main", "resources");
+    const privateKeyPath = path.join(resourcesDir, "privateKey.pem");
+    const publicKeyPath = path.join(resourcesDir, "publicKey.pem");
+
+    if (!fs.existsSync(privateKeyPath) || !fs.existsSync(publicKeyPath)) {
+        console.log("Generating JWT RSA key pair...");
+        execSync(`openssl genrsa -out "${privateKeyPath}" 2048`, { stdio: "inherit" });
+        execSync(`openssl rsa -in "${privateKeyPath}" -pubout -out "${publicKeyPath}"`, { stdio: "inherit" });
+        console.log("JWT keys generated");
+    } else {
+        console.log("JWT keys already exist");
+    }
 }
 
 function buildApplication(): Buffer {
     console.log("Building Quarkus application for Lambda...");
+    ensureJwtKeys();
     const gradlew = path.join(PROJECT_ROOT, "gradlew");
     execSync(`"${gradlew}" :backend:quarkusBuild -Ptarget=lambda -Dquarkus.profile=lambda -Dquarkus.package.jar.type=legacy-jar`, {
         stdio: "inherit",

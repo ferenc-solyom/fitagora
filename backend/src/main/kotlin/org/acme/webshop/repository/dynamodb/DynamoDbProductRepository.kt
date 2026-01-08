@@ -9,6 +9,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest
+import software.amazon.awssdk.services.dynamodb.model.QueryRequest
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest
 import java.math.BigDecimal
 import java.time.Instant
@@ -21,6 +22,7 @@ class DynamoDbProductRepository(
 
     companion object {
         const val TABLE_NAME = "webshop-products"
+        const val OWNER_INDEX = "owner-index"
     }
 
     override fun save(product: Product): Product {
@@ -28,6 +30,7 @@ class DynamoDbProductRepository(
             "id" to AttributeValue.builder().s(product.id).build(),
             "name" to AttributeValue.builder().s(product.name).build(),
             "price" to AttributeValue.builder().n(product.price.toPlainString()).build(),
+            "ownerId" to AttributeValue.builder().s(product.ownerId).build(),
             "createdAt" to AttributeValue.builder().s(product.createdAt.toString()).build()
         )
 
@@ -66,6 +69,21 @@ class DynamoDbProductRepository(
         return response.items().map { it.toProduct() }
     }
 
+    override fun findByOwnerId(ownerId: String): List<Product> {
+        val response = dynamoDb.query(
+            QueryRequest.builder()
+                .tableName(TABLE_NAME)
+                .indexName(OWNER_INDEX)
+                .keyConditionExpression("ownerId = :ownerId")
+                .expressionAttributeValues(
+                    mapOf(":ownerId" to AttributeValue.builder().s(ownerId).build())
+                )
+                .build()
+        )
+
+        return response.items().map { it.toProduct() }
+    }
+
     override fun deleteById(id: String): Boolean {
         findById(id) ?: return false
 
@@ -84,6 +102,7 @@ class DynamoDbProductRepository(
             id = this["id"]?.s() ?: error("Missing id"),
             name = this["name"]?.s() ?: error("Missing name"),
             price = BigDecimal(this["price"]?.n() ?: error("Missing price")),
+            ownerId = this["ownerId"]?.s() ?: error("Missing ownerId"),
             createdAt = Instant.parse(this["createdAt"]?.s() ?: error("Missing createdAt"))
         )
     }

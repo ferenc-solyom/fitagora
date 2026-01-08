@@ -8,5 +8,6 @@ data class Order(
     val productId: String,
     val quantity: Int,
     val totalPrice: BigDecimal,
+    val userId: String?,
     val createdAt: Instant
 )

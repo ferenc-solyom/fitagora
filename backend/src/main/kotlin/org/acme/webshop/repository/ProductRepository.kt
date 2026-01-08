@@ -6,5 +6,6 @@ interface ProductRepository {
     fun save(product: Product): Product
     fun findById(id: String): Product?
     fun findAll(): List<Product>
+    fun findByOwnerId(ownerId: String): List<Product>
     fun deleteById(id: String): Boolean
 }

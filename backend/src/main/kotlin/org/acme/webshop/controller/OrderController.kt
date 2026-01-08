@@ -1,5 +1,7 @@
 package org.acme.webshop.controller
 
+import jakarta.annotation.security.PermitAll
+import jakarta.annotation.security.RolesAllowed
 import jakarta.ws.rs.Consumes
 import jakarta.ws.rs.DELETE
 import jakarta.ws.rs.GET
@@ -7,8 +9,10 @@ import jakarta.ws.rs.POST
 import jakarta.ws.rs.Path
 import jakarta.ws.rs.PathParam
 import jakarta.ws.rs.Produces
+import jakarta.ws.rs.core.Context
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
+import jakarta.ws.rs.core.SecurityContext
 import org.acme.webshop.domain.Order
 import org.acme.webshop.dto.CreateOrderRequest
 import org.acme.webshop.dto.ErrorResponse
@@ -26,7 +30,11 @@ class OrderController(
 ) {
 
     @POST
-    fun createOrder(request: CreateOrderRequest): Response {
+    @PermitAll
+    fun createOrder(
+        request: CreateOrderRequest,
+        @Context securityContext: SecurityContext
+    ): Response {
         if (request.productId.isNullOrBlank()) {
             return Response.status(Response.Status.BAD_REQUEST)
                 .entity(ErrorResponse("productId is required"))
@@ -44,11 +52,14 @@ class OrderController(
                 .entity(ErrorResponse("Product not found"))
                 .build()
 
+        val userId = securityContext.userPrincipal?.name
+
         val order = Order(
             id = UUID.randomUUID().toString(),
             productId = product.id,
             quantity = request.quantity,
             totalPrice = product.price.multiply(request.quantity.toBigDecimal()),
+            userId = userId,
             createdAt = Instant.now()
         )
 
@@ -59,17 +70,41 @@ class OrderController(
     }
 
     @GET
-    fun getAllOrders(): List<Order> = orderRepository.findAll()
+    @RolesAllowed("user")
+    fun getMyOrders(@Context securityContext: SecurityContext): Response {
+        val userId = securityContext.userPrincipal?.name
+            ?: return Response.status(Response.Status.UNAUTHORIZED)
+                .entity(ErrorResponse("authentication required"))
+                .build()
+
+        val orders = orderRepository.findByUserId(userId)
+        return Response.ok(orders).build()
+    }
 
     @DELETE
     @Path("/{id}")
-    fun deleteOrder(@PathParam("id") id: String): Response {
-        return if (orderRepository.deleteById(id)) {
-            Response.noContent().build()
-        } else {
-            Response.status(Response.Status.NOT_FOUND)
+    @RolesAllowed("user")
+    fun deleteOrder(
+        @PathParam("id") id: String,
+        @Context securityContext: SecurityContext
+    ): Response {
+        val userId = securityContext.userPrincipal?.name
+            ?: return Response.status(Response.Status.UNAUTHORIZED)
+                .entity(ErrorResponse("authentication required"))
+                .build()
+
+        val order = orderRepository.findById(id)
+            ?: return Response.status(Response.Status.NOT_FOUND)
                 .entity(ErrorResponse("Order not found"))
                 .build()
+
+        if (order.userId != userId) {
+            return Response.status(Response.Status.FORBIDDEN)
+                .entity(ErrorResponse("you can only delete your own orders"))
+                .build()
         }
+
+        orderRepository.deleteById(id)
+        return Response.noContent().build()
     }
 }

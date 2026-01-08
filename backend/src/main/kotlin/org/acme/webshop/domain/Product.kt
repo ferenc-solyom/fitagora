@@ -7,5 +7,6 @@ data class Product(
     val id: String,
     val name: String,
     val price: BigDecimal,
+    val ownerId: String,
     val createdAt: Instant
 )

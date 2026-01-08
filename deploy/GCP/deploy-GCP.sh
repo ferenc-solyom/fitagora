@@ -8,6 +8,19 @@ APP_NAME="quarkus-cloud"
 REGION="${REGION:-europe-west1}"
 PROJECT_ID=$(gcloud config get-value project)
 
+RESOURCES_DIR="${REPO_ROOT}/backend/src/main/resources"
+PRIVATE_KEY="${RESOURCES_DIR}/privateKey.pem"
+PUBLIC_KEY="${RESOURCES_DIR}/publicKey.pem"
+
+if [[ ! -f "${PRIVATE_KEY}" ]] || [[ ! -f "${PUBLIC_KEY}" ]]; then
+    echo "Generating JWT RSA key pair..."
+    openssl genrsa -out "${PRIVATE_KEY}" 2048
+    openssl rsa -in "${PRIVATE_KEY}" -pubout -out "${PUBLIC_KEY}"
+    echo "JWT keys generated"
+else
+    echo "JWT keys already exist"
+fi
+
 echo "Building Quarkus app (container target)..."
 "${REPO_ROOT}/gradlew" -p "${REPO_ROOT}" build -x test
 

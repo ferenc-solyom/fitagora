@@ -49,3 +49,6 @@ frontend/package-lock.json
 /.quarkus/cli/plugins/
 # TLS Certificates
 .certs/
+
+# JWT private key (generate your own for production)
+backend/src/main/resources/privateKey.pem
