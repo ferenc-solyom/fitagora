@@ -26,13 +26,17 @@ class DynamoDbProductRepository(
     }
 
     override fun save(product: Product): Product {
-        val item = mapOf(
+        val item = mutableMapOf(
             "id" to AttributeValue.builder().s(product.id).build(),
             "name" to AttributeValue.builder().s(product.name).build(),
             "price" to AttributeValue.builder().n(product.price.toPlainString()).build(),
             "ownerId" to AttributeValue.builder().s(product.ownerId).build(),
             "createdAt" to AttributeValue.builder().s(product.createdAt.toString()).build()
         )
+
+        if (product.imageData != null) {
+            item["imageData"] = AttributeValue.builder().s(product.imageData).build()
+        }
 
         dynamoDb.putItem(
             PutItemRequest.builder()
@@ -103,6 +107,7 @@ class DynamoDbProductRepository(
             name = this["name"]?.s() ?: error("Missing name"),
             price = BigDecimal(this["price"]?.n() ?: error("Missing price")),
             ownerId = this["ownerId"]?.s() ?: error("Missing ownerId"),
+            imageData = this["imageData"]?.s(),
             createdAt = Instant.parse(this["createdAt"]?.s() ?: error("Missing createdAt"))
         )
     }

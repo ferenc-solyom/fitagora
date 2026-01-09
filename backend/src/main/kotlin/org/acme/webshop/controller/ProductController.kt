@@ -39,13 +39,14 @@ class ProductController(
         val userId = securityContext.userPrincipal?.name
             ?: return unauthorized("authentication required")
 
-        return when (val result = productService.createProduct(request.name, request.price, userId)) {
+        return when (val result = productService.createProduct(request.name, request.price, userId, request.imageData)) {
             is CreateProductResult.Success -> Response.status(Response.Status.CREATED)
                 .entity(result.product)
                 .build()
             is CreateProductResult.NameRequired -> badRequest("name is required")
             is CreateProductResult.PriceRequired -> badRequest("price is required")
             is CreateProductResult.PriceMustBePositive -> badRequest("price must be greater than zero")
+            is CreateProductResult.ImageTooLarge -> badRequest("image must be smaller than 500KB")
         }
     }
 

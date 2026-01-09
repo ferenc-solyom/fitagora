@@ -8,5 +8,6 @@ data class Product(
     val name: String,
     val price: BigDecimal,
     val ownerId: String,
+    val imageData: String? = null,
     val createdAt: Instant
 )

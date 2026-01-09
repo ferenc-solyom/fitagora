@@ -4,5 +4,6 @@ import java.math.BigDecimal
 
 data class CreateProductRequest(
     val name: String?,
-    val price: BigDecimal?
+    val price: BigDecimal?,
+    val imageData: String? = null
 )

@@ -3,6 +3,7 @@ export interface Product {
   name: string
   price: number
   ownerId: string
+  imageData: string | null
   createdAt: string
 }
 
@@ -18,6 +19,7 @@ export interface Order {
 export interface CreateProductRequest {
   name: string
   price: number
+  imageData?: string
 }
 
 export interface CreateOrderRequest {

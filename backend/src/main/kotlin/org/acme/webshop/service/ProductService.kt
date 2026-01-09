@@ -12,6 +12,7 @@ sealed class CreateProductResult {
     object NameRequired : CreateProductResult()
     object PriceRequired : CreateProductResult()
     object PriceMustBePositive : CreateProductResult()
+    object ImageTooLarge : CreateProductResult()
 }
 
 sealed class DeleteProductResult {
@@ -24,8 +25,16 @@ sealed class DeleteProductResult {
 class ProductService(
     private val productRepository: ProductRepository
 ) {
+    companion object {
+        const val MAX_IMAGE_SIZE_BYTES = 500_000
+    }
 
-    fun createProduct(name: String?, price: BigDecimal?, ownerId: String): CreateProductResult {
+    fun createProduct(
+        name: String?,
+        price: BigDecimal?,
+        ownerId: String,
+        imageData: String? = null
+    ): CreateProductResult {
         if (name.isNullOrBlank()) {
             return CreateProductResult.NameRequired
         }
@@ -38,11 +47,16 @@ class ProductService(
             return CreateProductResult.PriceMustBePositive
         }
 
+        if (imageData != null && imageData.length > MAX_IMAGE_SIZE_BYTES) {
+            return CreateProductResult.ImageTooLarge
+        }
+
         val product = Product(
             id = UUID.randomUUID().toString(),
             name = name,
             price = price,
             ownerId = ownerId,
+            imageData = imageData,
             createdAt = Instant.now()
         )
 
