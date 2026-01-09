@@ -13,19 +13,21 @@ import jakarta.ws.rs.core.Context
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
 import jakarta.ws.rs.core.SecurityContext
+import org.acme.webshop.controller.ResponseUtils.badRequest
+import org.acme.webshop.controller.ResponseUtils.forbidden
+import org.acme.webshop.controller.ResponseUtils.notFound
+import org.acme.webshop.controller.ResponseUtils.unauthorized
 import org.acme.webshop.domain.Product
 import org.acme.webshop.dto.CreateProductRequest
-import org.acme.webshop.dto.ErrorResponse
-import org.acme.webshop.repository.ProductRepository
-import java.math.BigDecimal
-import java.time.Instant
-import java.util.UUID
+import org.acme.webshop.service.CreateProductResult
+import org.acme.webshop.service.DeleteProductResult
+import org.acme.webshop.service.ProductService
 
 @Path("/api/products")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 class ProductController(
-    private val productRepository: ProductRepository
+    private val productService: ProductService
 ) {
 
     @POST
@@ -35,57 +37,30 @@ class ProductController(
         @Context securityContext: SecurityContext
     ): Response {
         val userId = securityContext.userPrincipal?.name
-            ?: return Response.status(Response.Status.UNAUTHORIZED)
-                .entity(ErrorResponse("authentication required"))
-                .build()
+            ?: return unauthorized("authentication required")
 
-        if (request.name.isNullOrBlank()) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                .entity(ErrorResponse("name is required"))
+        return when (val result = productService.createProduct(request.name, request.price, userId)) {
+            is CreateProductResult.Success -> Response.status(Response.Status.CREATED)
+                .entity(result.product)
                 .build()
+            is CreateProductResult.NameRequired -> badRequest("name is required")
+            is CreateProductResult.PriceRequired -> badRequest("price is required")
+            is CreateProductResult.PriceMustBePositive -> badRequest("price must be greater than zero")
         }
-
-        if (request.price == null) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                .entity(ErrorResponse("price is required"))
-                .build()
-        }
-
-        if (request.price <= BigDecimal.ZERO) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                .entity(ErrorResponse("price must be greater than zero"))
-                .build()
-        }
-
-        val product = Product(
-            id = UUID.randomUUID().toString(),
-            name = request.name,
-            price = request.price,
-            ownerId = userId,
-            createdAt = Instant.now()
-        )
-
-        val savedProduct = productRepository.save(product)
-        return Response.status(Response.Status.CREATED)
-            .entity(savedProduct)
-            .build()
     }
 
     @GET
     @PermitAll
-    fun getAllProducts(): List<Product> = productRepository.findAll()
+    fun getAllProducts(): List<Product> = productService.findAll()
 
     @GET
     @Path("/mine")
     @RolesAllowed("user")
     fun getMyProducts(@Context securityContext: SecurityContext): Response {
         val userId = securityContext.userPrincipal?.name
-            ?: return Response.status(Response.Status.UNAUTHORIZED)
-                .entity(ErrorResponse("authentication required"))
-                .build()
+            ?: return unauthorized("authentication required")
 
-        val products = productRepository.findByOwnerId(userId)
-        return Response.ok(products).build()
+        return Response.ok(productService.findByOwnerId(userId)).build()
     }
 
     @DELETE
@@ -96,22 +71,12 @@ class ProductController(
         @Context securityContext: SecurityContext
     ): Response {
         val userId = securityContext.userPrincipal?.name
-            ?: return Response.status(Response.Status.UNAUTHORIZED)
-                .entity(ErrorResponse("authentication required"))
-                .build()
+            ?: return unauthorized("authentication required")
 
-        val product = productRepository.findById(id)
-            ?: return Response.status(Response.Status.NOT_FOUND)
-                .entity(ErrorResponse("Product not found"))
-                .build()
-
-        if (product.ownerId != userId) {
-            return Response.status(Response.Status.FORBIDDEN)
-                .entity(ErrorResponse("you can only delete your own products"))
-                .build()
+        return when (productService.deleteProduct(id, userId)) {
+            is DeleteProductResult.Success -> Response.noContent().build()
+            is DeleteProductResult.NotFound -> notFound("Product not found")
+            is DeleteProductResult.NotOwner -> forbidden("you can only delete your own products")
         }
-
-        productRepository.deleteById(id)
-        return Response.noContent().build()
     }
 }

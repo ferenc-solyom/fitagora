@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <!-- Minimalistic dumbbell with circular exchange arrows forming the bar -->
+  <!-- Left weight plate -->
+  <rect x="4" y="16" width="8" height="16" rx="2" fill="#f1f5f9"/>
+  <!-- Right weight plate -->
+  <rect x="36" y="16" width="8" height="16" rx="2" fill="#f1f5f9"/>
+  <!-- Center bar with circular flow - represents marketplace exchange -->
+  <path d="M12 24h24" stroke="#f1f5f9" stroke-width="3" stroke-linecap="round"/>
+  <!-- Upper exchange arc -->
+  <path d="M18 20c4-4 8-4 12 0" stroke="#5eead4" stroke-width="2" stroke-linecap="round" fill="none"/>
+  <!-- Lower exchange arc -->
+  <path d="M18 28c4 4 8 4 12 0" stroke="#5eead4" stroke-width="2" stroke-linecap="round" fill="none"/>
+  <!-- Arrow tips for exchange -->
+  <path d="M28 18l2 2-2 2" stroke="#5eead4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <path d="M20 26l-2 2 2 2" stroke="#5eead4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+</svg>

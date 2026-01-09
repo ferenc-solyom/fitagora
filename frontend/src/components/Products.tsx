@@ -140,24 +140,27 @@ export function Products({ onOrderCreated }: ProductsProps) {
                 </td>
                 <td className="price-cell">{product.price.toFixed(2)}</td>
                 <td className="actions-cell">
-                  <input
-                    type="number"
-                    min="1"
-                    placeholder="Qty"
-                    value={quantities[product.id] || ''}
-                    onChange={(e) =>
-                      setQuantities((prev) => ({
-                        ...prev,
-                        [product.id]: e.target.value
-                      }))
-                    }
-                    className="quantity-input"
-                  />
-                  <button onClick={() => handleOrderProduct(product.id)} className="order-btn">Buy</button>
-                  {isOwner(product) && (
+                  {isOwner(product) ? (
                     <button onClick={() => handleDeleteProduct(product.id)} className="delete-btn">
                       Remove
                     </button>
+                  ) : (
+                    <>
+                      <input
+                        type="number"
+                        min="1"
+                        placeholder="Qty"
+                        value={quantities[product.id] || ''}
+                        onChange={(e) =>
+                          setQuantities((prev) => ({
+                            ...prev,
+                            [product.id]: e.target.value
+                          }))
+                        }
+                        className="quantity-input"
+                      />
+                      <button onClick={() => handleOrderProduct(product.id)} className="order-btn">Buy</button>
+                    </>
                   )}
                 </td>
               </tr>

@@ -13,20 +13,20 @@ import jakarta.ws.rs.core.Context
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
 import jakarta.ws.rs.core.SecurityContext
-import org.acme.webshop.domain.Order
+import org.acme.webshop.controller.ResponseUtils.badRequest
+import org.acme.webshop.controller.ResponseUtils.forbidden
+import org.acme.webshop.controller.ResponseUtils.notFound
+import org.acme.webshop.controller.ResponseUtils.unauthorized
 import org.acme.webshop.dto.CreateOrderRequest
-import org.acme.webshop.dto.ErrorResponse
-import org.acme.webshop.repository.OrderRepository
-import org.acme.webshop.repository.ProductRepository
-import java.time.Instant
-import java.util.UUID
+import org.acme.webshop.service.CreateOrderResult
+import org.acme.webshop.service.DeleteOrderResult
+import org.acme.webshop.service.OrderService
 
 @Path("/api/orders")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 class OrderController(
-    private val orderRepository: OrderRepository,
-    private val productRepository: ProductRepository
+    private val orderService: OrderService
 ) {
 
     @POST
@@ -35,50 +35,25 @@ class OrderController(
         request: CreateOrderRequest,
         @Context securityContext: SecurityContext
     ): Response {
-        if (request.productId.isNullOrBlank()) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                .entity(ErrorResponse("productId is required"))
-                .build()
-        }
-
-        if (request.quantity == null || request.quantity < 1) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                .entity(ErrorResponse("quantity must be at least 1"))
-                .build()
-        }
-
-        val product = productRepository.findById(request.productId)
-            ?: return Response.status(Response.Status.NOT_FOUND)
-                .entity(ErrorResponse("Product not found"))
-                .build()
-
         val userId = securityContext.userPrincipal?.name
 
-        val order = Order(
-            id = UUID.randomUUID().toString(),
-            productId = product.id,
-            quantity = request.quantity,
-            totalPrice = product.price.multiply(request.quantity.toBigDecimal()),
-            userId = userId,
-            createdAt = Instant.now()
-        )
-
-        val savedOrder = orderRepository.save(order)
-        return Response.status(Response.Status.CREATED)
-            .entity(savedOrder)
-            .build()
+        return when (val result = orderService.createOrder(request.productId, request.quantity, userId)) {
+            is CreateOrderResult.Success -> Response.status(Response.Status.CREATED)
+                .entity(result.order)
+                .build()
+            is CreateOrderResult.ProductIdRequired -> badRequest("productId is required")
+            is CreateOrderResult.InvalidQuantity -> badRequest("quantity must be at least 1")
+            is CreateOrderResult.ProductNotFound -> notFound("Product not found")
+        }
     }
 
     @GET
     @RolesAllowed("user")
     fun getMyOrders(@Context securityContext: SecurityContext): Response {
         val userId = securityContext.userPrincipal?.name
-            ?: return Response.status(Response.Status.UNAUTHORIZED)
-                .entity(ErrorResponse("authentication required"))
-                .build()
+            ?: return unauthorized("authentication required")
 
-        val orders = orderRepository.findByUserId(userId)
-        return Response.ok(orders).build()
+        return Response.ok(orderService.findByUserId(userId)).build()
     }
 
     @DELETE
@@ -89,22 +64,12 @@ class OrderController(
         @Context securityContext: SecurityContext
     ): Response {
         val userId = securityContext.userPrincipal?.name
-            ?: return Response.status(Response.Status.UNAUTHORIZED)
-                .entity(ErrorResponse("authentication required"))
-                .build()
+            ?: return unauthorized("authentication required")
 
-        val order = orderRepository.findById(id)
-            ?: return Response.status(Response.Status.NOT_FOUND)
-                .entity(ErrorResponse("Order not found"))
-                .build()
-
-        if (order.userId != userId) {
-            return Response.status(Response.Status.FORBIDDEN)
-                .entity(ErrorResponse("you can only delete your own orders"))
-                .build()
+        return when (orderService.deleteOrder(id, userId)) {
+            is DeleteOrderResult.Success -> Response.noContent().build()
+            is DeleteOrderResult.NotFound -> notFound("Order not found")
+            is DeleteOrderResult.NotOwner -> forbidden("you can only delete your own orders")
         }
-
-        orderRepository.deleteById(id)
-        return Response.noContent().build()
     }
 }
