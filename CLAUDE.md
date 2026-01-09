@@ -20,28 +20,96 @@ Claude must treat this as a **production system**. Favor correctness, maintainab
 
 ---
 
-## Language & Stack Rules
+## Language, Stack & Clean Code Rules
 
 ### Backend
 - Language: **Kotlin**
 - Framework: **Quarkus**
 - Java version: **17+**
+
+#### Architecture & Layers
+- Enforce **layered architecture**:
+    - **Controller / Resource**: HTTP, validation, request/response mapping only.
+    - **Service**: business logic, orchestration, transactions.
+    - **Repository**: persistence and data access only.
+- Do not bypass layers (e.g. controllers calling repositories directly).
+- Keep framework- and transport-specific code at the edges.
+
+#### Code Structure & Design
+- Follow **Single Responsibility Principle** strictly.
+- One primary reason to change per class.
+- Avoid “god services” and generic `Utils` classes.
+- Prefer composition over inheritance.
+- Avoid cyclic dependencies between packages.
+- Do not introduce abstractions without a clear benefit.
+
+#### Methods
+- Extract long methods aggressively.
+- Methods should:
+    - Do one thing.
+    - Fit on one screen.
+    - Have clear, intention-revealing names.
+- Avoid deeply nested conditionals; refactor into smaller functions.
+
+#### Kotlin-Specific Practices
 - Prefer immutable data structures.
 - Use `data class` for DTOs.
+- Prefer expressions over statements where it improves clarity.
+- Use sealed classes / enums for closed sets of states.
+- Avoid nullable types unless absence is a valid state.
+- Do not overuse scope functions (`let`, `run`, `apply`) if they reduce readability.
 - Avoid reflection-heavy patterns unless required by Quarkus.
 - Favor explicit configuration over magic defaults.
+
+#### Error Handling
+- Model domain errors explicitly.
+- Do not use exceptions for normal control flow.
+- Map domain errors to HTTP responses at the boundary layer only.
 
 Do **not**:
 - Introduce Spring abstractions or patterns.
 - Use blocking I/O in reactive paths.
 - Assume JVM tuning is unnecessary.
 
+---
+
 ### Frontend
 - Language: **TypeScript only**
 - Framework: **React**
-- Use functional components.
-- Prefer explicit types over inference at boundaries (API, state, props).
+
+#### Architecture & Layers
+- Separate concerns clearly:
+    - **UI components**: rendering and user interaction only.
+    - **State / hooks**: local or shared state management.
+    - **Services / API clients**: remote calls and data fetching.
+- Do not embed API calls or business logic directly in presentational components.
+- Keep framework-specific code (React hooks, JSX) out of domain logic.
+
+#### Code Structure & Design
+- Use functional components only.
+- Follow **Single Responsibility Principle** for components and hooks.
+- Prefer small, composable components.
+- Avoid “mega components” handling rendering, state, and data fetching together.
+- Avoid generic `utils` dumping grounds; keep helpers domain-scoped.
+
+#### Functions & Components
+- Extract long components and hooks aggressively.
+- Components and hooks should:
+    - Do one thing.
+    - Have clear, intention-revealing names.
+    - Avoid deep nesting of conditional rendering.
+- Prefer composition over prop-drilling or inheritance-like patterns.
+
+#### TypeScript Practices
+- Prefer explicit types at boundaries (API responses, props, state).
 - Avoid `any`. If unavoidable, justify its use.
+- Model domain states explicitly with unions and discriminated unions.
+- Avoid overusing type assertions (`as`) to silence the compiler.
+
+#### Error Handling
+- Handle API and domain errors explicitly.
+- Do not rely on implicit runtime failures.
+- Map backend error contracts to explicit frontend states.
 
 Do **not**:
 - Write JavaScript examples.
