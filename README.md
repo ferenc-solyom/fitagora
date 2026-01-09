@@ -93,6 +93,36 @@ cd deploy/GCP
 
 See [GCP_README.md](deploy/GCP/GCP_README.md) for details.
 
+### AWS Amplify (Frontend)
+
+To deploy the frontend on AWS Amplify:
+
+1. Connect your repository to Amplify
+2. Set the **App settings > Build settings** with the following `amplify.yml`:
+
+```yaml
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - cd frontend
+        - npm ci
+    build:
+      commands:
+        - npm run build
+  artifacts:
+    baseDirectory: frontend/dist
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - frontend/node_modules/**/*
+```
+
+3. Add environment variable in **App settings > Environment variables**:
+   - `VITE_API_BASE_URL`: Your backend API URL (e.g., `https://your-api.execute-api.eu-central-1.amazonaws.com`)
+
 ## Security
 
 - Passwords hashed with bcrypt (cost factor 12)
