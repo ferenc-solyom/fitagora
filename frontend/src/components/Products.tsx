@@ -7,7 +7,7 @@ interface ProductsProps {
   onOrderCreated: () => void
 }
 
-const MAX_IMAGE_SIZE = 500 * 1024
+const MAX_IMAGE_SIZE = 350 * 1024
 const MAX_IMAGE_DIMENSION = 800
 
 async function compressImage(file: File): Promise<string> {

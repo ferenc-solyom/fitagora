@@ -46,7 +46,7 @@ class ProductController(
             is CreateProductResult.NameRequired -> badRequest("name is required")
             is CreateProductResult.PriceRequired -> badRequest("price is required")
             is CreateProductResult.PriceMustBePositive -> badRequest("price must be greater than zero")
-            is CreateProductResult.ImageTooLarge -> badRequest("image must be smaller than 500KB")
+            is CreateProductResult.ImageTooLarge -> badRequest("image must be smaller than 350KB")
         }
     }
 

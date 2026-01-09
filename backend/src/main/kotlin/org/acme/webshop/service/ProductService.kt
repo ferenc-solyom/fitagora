@@ -26,7 +26,7 @@ class ProductService(
     private val productRepository: ProductRepository
 ) {
     companion object {
-        const val MAX_IMAGE_SIZE_BYTES = 500_000
+        const val MAX_IMAGE_SIZE_BYTES = 350_000
     }
 
     fun createProduct(
