@@ -6,6 +6,7 @@ import jakarta.ws.rs.Consumes
 import jakarta.ws.rs.DELETE
 import jakarta.ws.rs.GET
 import jakarta.ws.rs.POST
+import jakarta.ws.rs.PUT
 import jakarta.ws.rs.Path
 import jakarta.ws.rs.PathParam
 import jakarta.ws.rs.Produces
@@ -19,15 +20,21 @@ import org.acme.webshop.controller.ResponseUtils.notFound
 import org.acme.webshop.controller.ResponseUtils.unauthorized
 import org.acme.webshop.domain.Product
 import org.acme.webshop.dto.CreateProductRequest
+import org.acme.webshop.dto.SellerInfo
+import org.acme.webshop.dto.UpdateProductRequest
+import org.acme.webshop.dto.toDetailResponse
+import org.acme.webshop.service.AuthService
 import org.acme.webshop.service.CreateProductResult
 import org.acme.webshop.service.DeleteProductResult
 import org.acme.webshop.service.ProductService
+import org.acme.webshop.service.UpdateProductResult
 
 @Path("/api/products")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 class ProductController(
-    private val productService: ProductService
+    private val productService: ProductService,
+    private val authService: AuthService
 ) {
 
     @POST
@@ -39,20 +46,86 @@ class ProductController(
         val userId = securityContext.userPrincipal?.name
             ?: return unauthorized("authentication required")
 
-        return when (val result = productService.createProduct(request.name, request.price, userId, request.imageData)) {
+        return when (val result = productService.createProduct(
+            request.name,
+            request.description,
+            request.price,
+            userId,
+            request.images
+        )) {
             is CreateProductResult.Success -> Response.status(Response.Status.CREATED)
                 .entity(result.product)
                 .build()
             is CreateProductResult.NameRequired -> badRequest("name is required")
             is CreateProductResult.PriceRequired -> badRequest("price is required")
             is CreateProductResult.PriceMustBePositive -> badRequest("price must be greater than zero")
-            is CreateProductResult.ImageTooLarge -> badRequest("image must be smaller than 350KB")
+            is CreateProductResult.TooManyImages -> badRequest("maximum 3 images allowed")
+            is CreateProductResult.ImageTooLarge -> badRequest("each image must be smaller than 100KB")
+            is CreateProductResult.DescriptionTooLong -> badRequest("description must be at most 2000 characters")
+        }
+    }
+
+    @PUT
+    @Path("/{id}")
+    @RolesAllowed("user")
+    fun updateProduct(
+        @PathParam("id") id: String,
+        request: UpdateProductRequest,
+        @Context securityContext: SecurityContext
+    ): Response {
+        val userId = securityContext.userPrincipal?.name
+            ?: return unauthorized("authentication required")
+
+        return when (val result = productService.updateProduct(
+            id,
+            userId,
+            request.name,
+            request.description,
+            request.price,
+            request.images
+        )) {
+            is UpdateProductResult.Success -> Response.ok(result.product).build()
+            is UpdateProductResult.NotFound -> notFound("Product not found")
+            is UpdateProductResult.NotOwner -> forbidden("you can only update your own products")
+            is UpdateProductResult.NameRequired -> badRequest("name is required")
+            is UpdateProductResult.PriceRequired -> badRequest("price is required")
+            is UpdateProductResult.PriceMustBePositive -> badRequest("price must be greater than zero")
+            is UpdateProductResult.TooManyImages -> badRequest("maximum 3 images allowed")
+            is UpdateProductResult.ImageTooLarge -> badRequest("each image must be smaller than 100KB")
+            is UpdateProductResult.DescriptionTooLong -> badRequest("description must be at most 2000 characters")
         }
     }
 
     @GET
     @PermitAll
     fun getAllProducts(): List<Product> = productService.findAll()
+
+    @GET
+    @Path("/{id}")
+    @PermitAll
+    fun getProductById(@PathParam("id") id: String): Response {
+        val product = productService.findById(id)
+            ?: return notFound("Product not found")
+
+        val owner = authService.findUserById(product.ownerId)
+        val sellerInfo = if (owner != null) {
+            SellerInfo(
+                id = owner.id,
+                firstName = owner.firstName,
+                lastName = owner.lastName,
+                phoneNumber = owner.phoneNumber
+            )
+        } else {
+            SellerInfo(
+                id = product.ownerId,
+                firstName = "Unknown",
+                lastName = "Seller",
+                phoneNumber = null
+            )
+        }
+
+        return Response.ok(product.toDetailResponse(sellerInfo)).build()
+    }
 
     @GET
     @Path("/mine")

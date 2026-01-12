@@ -12,7 +12,21 @@ sealed class CreateProductResult {
     object NameRequired : CreateProductResult()
     object PriceRequired : CreateProductResult()
     object PriceMustBePositive : CreateProductResult()
+    object TooManyImages : CreateProductResult()
     object ImageTooLarge : CreateProductResult()
+    object DescriptionTooLong : CreateProductResult()
+}
+
+sealed class UpdateProductResult {
+    data class Success(val product: Product) : UpdateProductResult()
+    object NotFound : UpdateProductResult()
+    object NotOwner : UpdateProductResult()
+    object NameRequired : UpdateProductResult()
+    object PriceRequired : UpdateProductResult()
+    object PriceMustBePositive : UpdateProductResult()
+    object TooManyImages : UpdateProductResult()
+    object ImageTooLarge : UpdateProductResult()
+    object DescriptionTooLong : UpdateProductResult()
 }
 
 sealed class DeleteProductResult {
@@ -26,14 +40,17 @@ class ProductService(
     private val productRepository: ProductRepository
 ) {
     companion object {
-        const val MAX_IMAGE_SIZE_BYTES = 350_000
+        const val MAX_IMAGE_SIZE_BYTES = 100_000
+        const val MAX_IMAGES = 3
+        const val MAX_DESCRIPTION_LENGTH = 2000
     }
 
     fun createProduct(
         name: String?,
+        description: String?,
         price: BigDecimal?,
         ownerId: String,
-        imageData: String? = null
+        images: List<String>? = null
     ): CreateProductResult {
         if (name.isNullOrBlank()) {
             return CreateProductResult.NameRequired
@@ -47,21 +64,82 @@ class ProductService(
             return CreateProductResult.PriceMustBePositive
         }
 
-        if (imageData != null && imageData.length > MAX_IMAGE_SIZE_BYTES) {
+        if (description != null && description.length > MAX_DESCRIPTION_LENGTH) {
+            return CreateProductResult.DescriptionTooLong
+        }
+
+        val imageList = images ?: emptyList()
+        if (imageList.size > MAX_IMAGES) {
+            return CreateProductResult.TooManyImages
+        }
+
+        if (imageList.any { it.length > MAX_IMAGE_SIZE_BYTES }) {
             return CreateProductResult.ImageTooLarge
         }
 
         val product = Product(
             id = UUID.randomUUID().toString(),
             name = name,
+            description = description?.takeIf { it.isNotBlank() },
             price = price,
             ownerId = ownerId,
-            imageData = imageData,
+            images = imageList,
             createdAt = Instant.now()
         )
 
         val savedProduct = productRepository.save(product)
         return CreateProductResult.Success(savedProduct)
+    }
+
+    fun updateProduct(
+        id: String,
+        requestingUserId: String,
+        name: String?,
+        description: String?,
+        price: BigDecimal?,
+        images: List<String>?
+    ): UpdateProductResult {
+        val existing = productRepository.findById(id)
+            ?: return UpdateProductResult.NotFound
+
+        if (existing.ownerId != requestingUserId) {
+            return UpdateProductResult.NotOwner
+        }
+
+        if (name.isNullOrBlank()) {
+            return UpdateProductResult.NameRequired
+        }
+
+        if (price == null) {
+            return UpdateProductResult.PriceRequired
+        }
+
+        if (price <= BigDecimal.ZERO) {
+            return UpdateProductResult.PriceMustBePositive
+        }
+
+        if (description != null && description.length > MAX_DESCRIPTION_LENGTH) {
+            return UpdateProductResult.DescriptionTooLong
+        }
+
+        val imageList = images ?: emptyList()
+        if (imageList.size > MAX_IMAGES) {
+            return UpdateProductResult.TooManyImages
+        }
+
+        if (imageList.any { it.length > MAX_IMAGE_SIZE_BYTES }) {
+            return UpdateProductResult.ImageTooLarge
+        }
+
+        val updated = existing.copy(
+            name = name,
+            description = description?.takeIf { it.isNotBlank() },
+            price = price,
+            images = imageList
+        )
+
+        val savedProduct = productRepository.save(updated)
+        return UpdateProductResult.Success(savedProduct)
     }
 
     fun findAll(): List<Product> = productRepository.findAll()
@@ -81,4 +159,6 @@ class ProductService(
         productRepository.deleteById(id)
         return DeleteProductResult.Success
     }
+
+    fun deleteByOwnerId(ownerId: String): Int = productRepository.deleteByOwnerId(ownerId)
 }

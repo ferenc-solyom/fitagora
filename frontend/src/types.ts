@@ -1,30 +1,49 @@
 export interface Product {
   id: string
   name: string
+  description: string | null
   price: number
   ownerId: string
-  imageData: string | null
+  images: string[]
   createdAt: string
 }
 
-export interface Order {
+export interface SellerInfo {
   id: string
+  firstName: string
+  lastName: string
+  phoneNumber: string | null
+}
+
+export interface ProductDetail {
+  id: string
+  name: string
+  description: string | null
+  price: number
+  images: string[]
+  createdAt: string
+  seller: SellerInfo
+}
+
+export interface Favorite {
+  id: string
+  userId: string
   productId: string
-  quantity: number
-  totalPrice: number
-  userId: string | null
   createdAt: string
 }
 
 export interface CreateProductRequest {
   name: string
+  description?: string
   price: number
-  imageData?: string
+  images?: string[]
 }
 
-export interface CreateOrderRequest {
-  productId: string
-  quantity: number
+export interface UpdateProductRequest {
+  name: string
+  description?: string
+  price: number
+  images?: string[]
 }
 
 export interface ErrorResponse {

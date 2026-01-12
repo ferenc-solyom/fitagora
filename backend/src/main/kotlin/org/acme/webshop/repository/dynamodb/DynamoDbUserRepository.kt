@@ -6,6 +6,7 @@ import org.acme.webshop.domain.User
 import org.acme.webshop.repository.UserRepository
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
+import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest
@@ -81,6 +82,19 @@ class DynamoDbUserRepository(
     }
 
     override fun existsByEmail(email: String): Boolean = findByEmail(email) != null
+
+    override fun deleteById(id: String): Boolean {
+        findById(id) ?: return false
+
+        dynamoDb.deleteItem(
+            DeleteItemRequest.builder()
+                .tableName(TABLE_NAME)
+                .key(mapOf("id" to AttributeValue.builder().s(id).build()))
+                .build()
+        )
+
+        return true
+    }
 
     private fun Map<String, AttributeValue>.toUser(): User {
         return User(

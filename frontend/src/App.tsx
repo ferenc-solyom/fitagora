@@ -1,19 +1,14 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Products } from './components/Products'
-import { Orders, OrdersHandle } from './components/Orders'
+import { Favorites } from './components/Favorites'
 import { useAuth } from './context/AuthContext'
 
-type View = 'products' | 'orders'
+type View = 'products' | 'favorites'
 
 function App() {
-  const ordersRef = useRef<OrdersHandle>(null)
   const { user, loading, logout } = useAuth()
   const [activeView, setActiveView] = useState<View>('products')
-
-  const handleOrderCreated = () => {
-    ordersRef.current?.refresh()
-  }
 
   if (loading) {
     return (
@@ -50,10 +45,10 @@ function App() {
         </button>
         {user && (
           <button
-            className={`view-tab ${activeView === 'orders' ? 'active' : ''}`}
-            onClick={() => setActiveView('orders')}
+            className={`view-tab ${activeView === 'favorites' ? 'active' : ''}`}
+            onClick={() => setActiveView('favorites')}
           >
-            My Orders
+            My Favorites
           </button>
         )}
       </div>
@@ -75,9 +70,9 @@ function App() {
 
       <main className="main main-full">
         {activeView === 'products' ? (
-          <Products onOrderCreated={handleOrderCreated} />
+          <Products />
         ) : (
-          user && <Orders ref={ordersRef} />
+          user && <Favorites />
         )}
       </main>
 

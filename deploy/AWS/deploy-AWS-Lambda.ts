@@ -64,7 +64,7 @@ const sts = new STSClient({ region: REGION });
 const dynamodb = new DynamoDBClient({ region: REGION });
 
 const PRODUCTS_TABLE = "webshop-products";
-const ORDERS_TABLE = "webshop-orders";
+const FAVORITES_TABLE = "webshop-favorites";
 const USERS_TABLE = "webshop-users";
 
 const ASSUME_ROLE_POLICY = JSON.stringify({
@@ -130,8 +130,8 @@ async function ensureDynamoDbPolicy(accountId: string): Promise<void> {
                 Resource: [
                     `arn:aws:dynamodb:${REGION}:${accountId}:table/${PRODUCTS_TABLE}`,
                     `arn:aws:dynamodb:${REGION}:${accountId}:table/${PRODUCTS_TABLE}/index/*`,
-                    `arn:aws:dynamodb:${REGION}:${accountId}:table/${ORDERS_TABLE}`,
-                    `arn:aws:dynamodb:${REGION}:${accountId}:table/${ORDERS_TABLE}/index/*`,
+                    `arn:aws:dynamodb:${REGION}:${accountId}:table/${FAVORITES_TABLE}`,
+                    `arn:aws:dynamodb:${REGION}:${accountId}:table/${FAVORITES_TABLE}/index/*`,
                     `arn:aws:dynamodb:${REGION}:${accountId}:table/${USERS_TABLE}`,
                     `arn:aws:dynamodb:${REGION}:${accountId}:table/${USERS_TABLE}/index/*`,
                 ],
@@ -150,56 +150,67 @@ async function ensureDynamoDbPolicy(accountId: string): Promise<void> {
     console.log("Updated DynamoDB IAM policy");
 }
 
+interface GsiConfig {
+    attribute: string;
+    name: string;
+}
+
 interface TableConfig {
     tableName: string;
-    gsiAttribute?: string;
-    gsiName?: string;
+    gsis?: GsiConfig[];
 }
 
 async function ensureDynamoDbTable(config: TableConfig): Promise<void> {
-    const { tableName, gsiAttribute, gsiName } = config;
+    const { tableName, gsis = [] } = config;
 
     try {
         const describeResult = await dynamodb.send(new DescribeTableCommand({ TableName: tableName }));
         console.log(`DynamoDB table exists: ${tableName}`);
 
-        // Check if GSI exists, add if missing
-        if (gsiAttribute && gsiName) {
-            const existingGsis = describeResult.Table?.GlobalSecondaryIndexes || [];
-            const gsiExists = existingGsis.some(gsi => gsi.IndexName === gsiName);
+        const existingGsis = describeResult.Table?.GlobalSecondaryIndexes || [];
+        for (const gsi of gsis) {
+            const gsiExists = existingGsis.some(g => g.IndexName === gsi.name);
 
             if (!gsiExists) {
-                console.log(`Adding GSI ${gsiName} to ${tableName}...`);
+                console.log(`Adding GSI ${gsi.name} to ${tableName}...`);
                 await dynamodb.send(
                     new UpdateTableCommand({
                         TableName: tableName,
-                        AttributeDefinitions: [{ AttributeName: gsiAttribute, AttributeType: "S" }],
+                        AttributeDefinitions: [{ AttributeName: gsi.attribute, AttributeType: "S" }],
                         GlobalSecondaryIndexUpdates: [
                             {
                                 Create: {
-                                    IndexName: gsiName,
-                                    KeySchema: [{ AttributeName: gsiAttribute, KeyType: "HASH" }],
+                                    IndexName: gsi.name,
+                                    KeySchema: [{ AttributeName: gsi.attribute, KeyType: "HASH" }],
                                     Projection: { ProjectionType: "ALL" },
                                 },
                             },
                         ],
                     })
                 );
-                console.log(`Added GSI ${gsiName} to ${tableName} (may take a minute to become active)`);
+                console.log(`Added GSI ${gsi.name} to ${tableName} (may take a minute to become active)`);
+                // Wait for GSI to be created before adding next one
+                await new Promise((resolve) => setTimeout(resolve, 5000));
             } else {
-                console.log(`GSI ${gsiName} already exists on ${tableName}`);
+                console.log(`GSI ${gsi.name} already exists on ${tableName}`);
             }
         }
     } catch (e) {
         if (e instanceof ResourceNotFoundException) {
-            const attributeDefinitions = [{ AttributeName: "id", AttributeType: "S" }];
-            const globalSecondaryIndexes = [];
+            const attributeDefinitions: { AttributeName: string; AttributeType: string }[] = [
+                { AttributeName: "id", AttributeType: "S" }
+            ];
+            const globalSecondaryIndexes: {
+                IndexName: string;
+                KeySchema: { AttributeName: string; KeyType: string }[];
+                Projection: { ProjectionType: string };
+            }[] = [];
 
-            if (gsiAttribute && gsiName) {
-                attributeDefinitions.push({ AttributeName: gsiAttribute, AttributeType: "S" });
+            for (const gsi of gsis) {
+                attributeDefinitions.push({ AttributeName: gsi.attribute, AttributeType: "S" });
                 globalSecondaryIndexes.push({
-                    IndexName: gsiName,
-                    KeySchema: [{ AttributeName: gsiAttribute, KeyType: "HASH" }],
+                    IndexName: gsi.name,
+                    KeySchema: [{ AttributeName: gsi.attribute, KeyType: "HASH" }],
                     Projection: { ProjectionType: "ALL" },
                 });
             }
@@ -213,7 +224,8 @@ async function ensureDynamoDbTable(config: TableConfig): Promise<void> {
                     GlobalSecondaryIndexes: globalSecondaryIndexes.length > 0 ? globalSecondaryIndexes : undefined,
                 })
             );
-            console.log(`Created DynamoDB table: ${tableName}${gsiName ? ` with GSI: ${gsiName}` : ""}`);
+            const gsiNames = gsis.map(g => g.name).join(", ");
+            console.log(`Created DynamoDB table: ${tableName}${gsiNames ? ` with GSIs: ${gsiNames}` : ""}`);
         } else {
             throw e;
         }
@@ -223,18 +235,18 @@ async function ensureDynamoDbTable(config: TableConfig): Promise<void> {
 async function ensureDynamoDbTables(): Promise<void> {
     await ensureDynamoDbTable({
         tableName: PRODUCTS_TABLE,
-        gsiAttribute: "ownerId",
-        gsiName: "owner-index",
+        gsis: [{ attribute: "ownerId", name: "owner-index" }],
     });
     await ensureDynamoDbTable({
-        tableName: ORDERS_TABLE,
-        gsiAttribute: "userId",
-        gsiName: "user-index",
+        tableName: FAVORITES_TABLE,
+        gsis: [
+            { attribute: "userId", name: "user-index" },
+            { attribute: "productId", name: "product-index" },
+        ],
     });
     await ensureDynamoDbTable({
         tableName: USERS_TABLE,
-        gsiAttribute: "email",
-        gsiName: "email-index",
+        gsis: [{ attribute: "email", name: "email-index" }],
     });
 }
 

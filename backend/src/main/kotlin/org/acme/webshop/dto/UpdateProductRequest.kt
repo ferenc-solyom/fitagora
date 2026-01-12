@@ -2,7 +2,7 @@ package org.acme.webshop.dto
 
 import java.math.BigDecimal
 
-data class CreateProductRequest(
+data class UpdateProductRequest(
     val name: String?,
     val description: String? = null,
     val price: BigDecimal?,

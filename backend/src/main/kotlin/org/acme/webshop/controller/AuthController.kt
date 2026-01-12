@@ -3,6 +3,7 @@ package org.acme.webshop.controller
 import jakarta.annotation.security.PermitAll
 import jakarta.annotation.security.RolesAllowed
 import jakarta.ws.rs.Consumes
+import jakarta.ws.rs.DELETE
 import jakarta.ws.rs.GET
 import jakarta.ws.rs.POST
 import jakarta.ws.rs.Path
@@ -22,6 +23,7 @@ import org.acme.webshop.dto.RegisterRequest
 import org.acme.webshop.dto.UserResponse
 import org.acme.webshop.service.AuthResult
 import org.acme.webshop.service.AuthService
+import org.acme.webshop.service.DeleteUserResult
 
 @Path("/api/auth")
 @Produces(MediaType.APPLICATION_JSON)
@@ -86,6 +88,19 @@ class AuthController(
             ?: return notFound("user not found")
 
         return Response.ok(user.toResponse()).build()
+    }
+
+    @DELETE
+    @Path("/me")
+    @RolesAllowed("user")
+    fun deleteCurrentUser(@Context securityContext: SecurityContext): Response {
+        val userId = securityContext.userPrincipal?.name
+            ?: return unauthorized("not authenticated")
+
+        return when (authService.deleteUser(userId)) {
+            is DeleteUserResult.Success -> Response.noContent().build()
+            is DeleteUserResult.NotFound -> notFound("user not found")
+        }
     }
 
     private fun validateRegisterRequest(request: RegisterRequest): String? {

@@ -6,8 +6,9 @@ import java.time.Instant
 data class Product(
     val id: String,
     val name: String,
+    val description: String? = null,
     val price: BigDecimal,
     val ownerId: String,
-    val imageData: String? = null,
+    val images: List<String> = emptyList(),
     val createdAt: Instant
 )

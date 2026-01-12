@@ -27,4 +27,10 @@ class InMemoryUserRepository : UserRepository {
     }
 
     override fun existsByEmail(email: String): Boolean = emailIndex.containsKey(email.lowercase())
+
+    override fun deleteById(id: String): Boolean {
+        val user = users.remove(id) ?: return false
+        emailIndex.remove(user.email.lowercase())
+        return true
+    }
 }

@@ -1,8 +1,9 @@
 import type {
   Product,
-  Order,
+  ProductDetail,
+  Favorite,
   CreateProductRequest,
-  CreateOrderRequest,
+  UpdateProductRequest,
   ErrorResponse,
   RegisterRequest,
   LoginRequest,
@@ -88,6 +89,11 @@ export async function getProducts(): Promise<Product[]> {
   return handleResponse<Product[]>(response)
 }
 
+export async function getProduct(id: string): Promise<ProductDetail> {
+  const response = await fetch(`${API_BASE_URL}/api/products/${id}`)
+  return handleResponse<ProductDetail>(response)
+}
+
 export async function getMyProducts(): Promise<Product[]> {
   const response = await fetch(`${API_BASE_URL}/api/products/mine`, {
     headers: getAuthHeaders()
@@ -104,6 +110,15 @@ export async function createProduct(request: CreateProductRequest): Promise<Prod
   return handleResponse<Product>(response)
 }
 
+export async function updateProduct(id: string, request: UpdateProductRequest): Promise<Product> {
+  const response = await fetch(`${API_BASE_URL}/api/products/${id}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(request)
+  })
+  return handleResponse<Product>(response)
+}
+
 export async function deleteProduct(id: string): Promise<void> {
   const response = await fetch(`${API_BASE_URL}/api/products/${id}`, {
     method: 'DELETE',
@@ -112,29 +127,36 @@ export async function deleteProduct(id: string): Promise<void> {
   return handleResponse<void>(response)
 }
 
-// Orders API
-export async function getOrders(): Promise<Order[]> {
-  const response = await fetch(`${API_BASE_URL}/api/orders`, {
+// Favorites API
+export async function getFavorites(): Promise<Favorite[]> {
+  const response = await fetch(`${API_BASE_URL}/api/favorites`, {
     headers: getAuthHeaders()
   })
-  return handleResponse<Order[]>(response)
+  return handleResponse<Favorite[]>(response)
 }
 
-export async function createOrder(request: CreateOrderRequest): Promise<Order> {
-  const response = await fetch(`${API_BASE_URL}/api/orders`, {
+export async function addFavorite(productId: string): Promise<Favorite> {
+  const response = await fetch(`${API_BASE_URL}/api/favorites/${productId}`, {
     method: 'POST',
-    headers: getAuthHeaders(),
-    body: JSON.stringify(request)
+    headers: getAuthHeaders()
   })
-  return handleResponse<Order>(response)
+  return handleResponse<Favorite>(response)
 }
 
-export async function deleteOrder(id: string): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/api/orders/${id}`, {
+export async function removeFavorite(productId: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/favorites/${productId}`, {
     method: 'DELETE',
     headers: getAuthHeaders()
   })
   return handleResponse<void>(response)
+}
+
+export async function isFavorited(productId: string): Promise<boolean> {
+  const response = await fetch(`${API_BASE_URL}/api/favorites/${productId}/status`, {
+    headers: getAuthHeaders()
+  })
+  const data = await handleResponse<{ favorited: boolean }>(response)
+  return data.favorited
 }
 
 export { ApiError }

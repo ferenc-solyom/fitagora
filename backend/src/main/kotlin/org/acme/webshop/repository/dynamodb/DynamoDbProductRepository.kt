@@ -34,8 +34,14 @@ class DynamoDbProductRepository(
             "createdAt" to AttributeValue.builder().s(product.createdAt.toString()).build()
         )
 
-        if (product.imageData != null) {
-            item["imageData"] = AttributeValue.builder().s(product.imageData).build()
+        if (product.description != null) {
+            item["description"] = AttributeValue.builder().s(product.description).build()
+        }
+
+        if (product.images.isNotEmpty()) {
+            item["images"] = AttributeValue.builder().l(
+                product.images.map { AttributeValue.builder().s(it).build() }
+            ).build()
         }
 
         dynamoDb.putItem(
@@ -101,13 +107,20 @@ class DynamoDbProductRepository(
         return true
     }
 
+    override fun deleteByOwnerId(ownerId: String): Int {
+        val products = findByOwnerId(ownerId)
+        products.forEach { deleteById(it.id) }
+        return products.size
+    }
+
     private fun Map<String, AttributeValue>.toProduct(): Product {
         return Product(
             id = this["id"]?.s() ?: error("Missing id"),
             name = this["name"]?.s() ?: error("Missing name"),
+            description = this["description"]?.s(),
             price = BigDecimal(this["price"]?.n() ?: error("Missing price")),
             ownerId = this["ownerId"]?.s() ?: error("Missing ownerId"),
-            imageData = this["imageData"]?.s(),
+            images = this["images"]?.l()?.mapNotNull { it.s() } ?: emptyList(),
             createdAt = Instant.parse(this["createdAt"]?.s() ?: error("Missing createdAt"))
         )
     }

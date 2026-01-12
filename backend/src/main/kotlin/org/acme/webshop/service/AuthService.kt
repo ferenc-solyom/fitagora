@@ -1,6 +1,7 @@
 package org.acme.webshop.service
 
 import jakarta.enterprise.context.ApplicationScoped
+import jakarta.inject.Inject
 import org.acme.webshop.domain.User
 import org.acme.webshop.repository.UserRepository
 import java.time.Instant
@@ -13,12 +14,22 @@ sealed class AuthResult {
     object UserNotFound : AuthResult()
 }
 
+sealed class DeleteUserResult {
+    object Success : DeleteUserResult()
+    object NotFound : DeleteUserResult()
+}
+
 @ApplicationScoped
 class AuthService(
     private val userRepository: UserRepository,
     private val passwordService: PasswordService,
     private val jwtService: JwtService
 ) {
+    @Inject
+    lateinit var productService: ProductService
+
+    @Inject
+    lateinit var favoriteService: FavoriteService
 
     fun register(
         email: String,
@@ -63,5 +74,20 @@ class AuthService(
 
     fun findUserById(userId: String): User? {
         return userRepository.findById(userId)
+    }
+
+    fun deleteUser(userId: String): DeleteUserResult {
+        userRepository.findById(userId)
+            ?: return DeleteUserResult.NotFound
+
+        val products = productService.findByOwnerId(userId)
+        products.forEach { product ->
+            favoriteService.deleteByProductId(product.id)
+        }
+
+        productService.deleteByOwnerId(userId)
+
+        userRepository.deleteById(userId)
+        return DeleteUserResult.Success
     }
 }

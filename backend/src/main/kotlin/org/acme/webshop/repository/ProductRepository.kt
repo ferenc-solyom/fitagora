@@ -8,4 +8,5 @@ interface ProductRepository {
     fun findAll(): List<Product>
     fun findByOwnerId(ownerId: String): List<Product>
     fun deleteById(id: String): Boolean
+    fun deleteByOwnerId(ownerId: String): Int
 }

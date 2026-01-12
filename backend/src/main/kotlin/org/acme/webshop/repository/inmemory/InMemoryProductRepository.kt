@@ -25,4 +25,10 @@ class InMemoryProductRepository : ProductRepository {
         products.values.filter { it.ownerId == ownerId }
 
     override fun deleteById(id: String): Boolean = products.remove(id) != null
+
+    override fun deleteByOwnerId(ownerId: String): Int {
+        val toDelete = products.values.filter { it.ownerId == ownerId }
+        toDelete.forEach { products.remove(it.id) }
+        return toDelete.size
+    }
 }
