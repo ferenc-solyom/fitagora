@@ -1,14 +1,25 @@
 # FitAgora
 
-A second-hand fitness equipment marketplace built with Kotlin/Quarkus and React/TypeScript. Features user authentication, product listings, and order management with multi-cloud deployment support.
+A C2C second-hand fitness equipment marketplace built with Kotlin/Quarkus and React/TypeScript. Users can list fitness equipment for sale, browse listings, save favorites, and contact sellers directly. Supports multi-cloud deployment (AWS ECS, AWS Lambda, GCP Cloud Run).
 
 ## Features
 
-- User registration and authentication (JWT-based)
-- Browse fitness equipment listings (public)
-- List your own equipment for sale (requires login)
-- Place orders (guest or authenticated)
-- Manage your products and order history
+### Marketplace
+- Browse fitness equipment listings with search and category filtering
+- 10 product categories: Cardio, Strength, Mobility, Recovery, Home Gym, Accessories, Plyometrics, Core, Outdoor/Functional, Other
+- Paginated product grid (12 items per page)
+- Product details with seller contact information (name, phone)
+
+### User Features
+- JWT-based registration and authentication
+- List your own equipment for sale (up to 3 images per product)
+- Client-side image compression (max 800px, auto-compressed to 100KB)
+- Favorites system to save products for later
+- Manage your own listings (edit, delete)
+
+### Internationalization
+- Three languages supported: English, Romanian, Hungarian
+- Language switcher in the UI
 
 ## Tech Stack
 
