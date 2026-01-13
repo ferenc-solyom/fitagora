@@ -9,6 +9,8 @@ data class ProductDetailResponse(
     val name: String,
     val description: String?,
     val price: BigDecimal,
+    val category: String,
+    val categoryDisplayName: String,
     val images: List<String>,
     val createdAt: Instant,
     val seller: SellerInfo
@@ -26,6 +28,8 @@ fun Product.toDetailResponse(sellerInfo: SellerInfo) = ProductDetailResponse(
     name = name,
     description = description,
     price = price,
+    category = category.name,
+    categoryDisplayName = category.displayName,
     images = images,
     createdAt = createdAt,
     seller = sellerInfo

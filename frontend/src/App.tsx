@@ -25,6 +25,22 @@ function App() {
           <img src="/logo.svg" alt="FitAgora" className="nav-logo" />
           <span className="nav-title">Fit<span className="nav-title-accent">Agora</span></span>
         </Link>
+        <div className="nav-links">
+          <button
+            className={`nav-link ${activeView === 'products' ? 'active' : ''}`}
+            onClick={() => setActiveView('products')}
+          >
+            Products
+          </button>
+          {user && (
+            <button
+              className={`nav-link ${activeView === 'favorites' ? 'active' : ''}`}
+              onClick={() => setActiveView('favorites')}
+            >
+              Favorites
+            </button>
+          )}
+        </div>
         <div className="nav-actions">
           {user ? (
             <>
@@ -36,37 +52,6 @@ function App() {
           )}
         </div>
       </nav>
-      <div className="view-tabs">
-        <button
-          className={`view-tab ${activeView === 'products' ? 'active' : ''}`}
-          onClick={() => setActiveView('products')}
-        >
-          Products
-        </button>
-        {user && (
-          <button
-            className={`view-tab ${activeView === 'favorites' ? 'active' : ''}`}
-            onClick={() => setActiveView('favorites')}
-          >
-            My Favorites
-          </button>
-        )}
-      </div>
-
-      <header className="header">
-        <div className="hero">
-          <img
-            src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1200&h=400&fit=crop&crop=center"
-            alt="Fitness equipment"
-            className="hero-image"
-          />
-          <div className="hero-overlay" />
-          <div className="header-content">
-            <h1 className="hero-title">Second Hand Fitness Equipment</h1>
-            <p className="hero-subtitle">Buy and sell quality fitness gear</p>
-          </div>
-        </div>
-      </header>
 
       <main className="main main-full">
         {activeView === 'products' ? (

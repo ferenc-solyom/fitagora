@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import type { Product, Favorite, UpdateProductRequest } from '../types'
+import type { Product, Favorite, UpdateProductRequest, Category } from '../types'
 import {
   getProducts,
   createProduct,
@@ -9,6 +9,7 @@ import {
   getFavorites,
   addFavorite,
   removeFavorite,
+  getCategories,
   ApiError
 } from '../api'
 import { useAuth } from '../context/AuthContext'
@@ -72,9 +73,14 @@ export function Products() {
   const { user } = useAuth()
   const [products, setProducts] = useState<Product[]>([])
   const [favorites, setFavorites] = useState<Set<string>>(new Set())
+  const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchInput, setSearchInput] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState('')
   const [name, setName] = useState('')
+  const [category, setCategory] = useState('')
   const [description, setDescription] = useState('')
   const [price, setPrice] = useState('')
   const [images, setImages] = useState<string[]>([])
@@ -86,16 +92,18 @@ export function Products() {
   const [editName, setEditName] = useState('')
   const [editDescription, setEditDescription] = useState('')
   const [editPrice, setEditPrice] = useState('')
+  const [editCategory, setEditCategory] = useState('')
   const [editImages, setEditImages] = useState<string[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
   const editFileInputRef = useRef<HTMLInputElement>(null)
 
-  const fetchData = async () => {
+  const fetchData = async (query?: string, catFilter?: string) => {
     try {
       setLoading(true)
       setError(null)
+      const searchParams = (query || catFilter) ? { q: query || undefined, category: catFilter || undefined } : undefined
       const [productsData, favoritesData] = await Promise.all([
-        getProducts(),
+        getProducts(searchParams),
         user ? getFavorites() : Promise.resolve([])
       ])
       setProducts(productsData)
@@ -108,8 +116,23 @@ export function Products() {
   }
 
   useEffect(() => {
-    fetchData()
-  }, [user])
+    getCategories().then(setCategories).catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    fetchData(searchQuery, categoryFilter)
+  }, [user, searchQuery, categoryFilter])
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    setSearchQuery(searchInput.trim())
+  }
+
+  const handleClearSearch = () => {
+    setSearchInput('')
+    setSearchQuery('')
+    setCategoryFilter('')
+  }
 
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>, isEdit = false) => {
     const files = e.target.files
@@ -165,20 +188,26 @@ export function Products() {
         setActionError('Price must be a positive number')
         return
       }
+      if (!category) {
+        setActionError('Please select a category')
+        return
+      }
       await createProduct({
         name,
         description: description || undefined,
         price: priceNum,
+        category,
         images: images.length > 0 ? images : undefined
       })
       setName('')
       setDescription('')
       setPrice('')
+      setCategory('')
       setImages([])
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }
-      await fetchData()
+      await fetchData(searchQuery, categoryFilter)
     } catch (e) {
       setActionError(e instanceof ApiError ? e.message : 'Failed to add product')
     }
@@ -189,6 +218,7 @@ export function Products() {
     setEditName(product.name)
     setEditDescription(product.description || '')
     setEditPrice(product.price.toString())
+    setEditCategory(product.category)
     setEditImages([...product.images])
     setActionError(null)
   }
@@ -198,6 +228,7 @@ export function Products() {
     setEditName('')
     setEditDescription('')
     setEditPrice('')
+    setEditCategory('')
     setEditImages([])
   }
 
@@ -212,17 +243,22 @@ export function Products() {
         setActionError('Price must be a positive number')
         return
       }
+      if (!editCategory) {
+        setActionError('Please select a category')
+        return
+      }
 
       const request: UpdateProductRequest = {
         name: editName,
         description: editDescription || undefined,
         price: priceNum,
+        category: editCategory,
         images: editImages.length > 0 ? editImages : undefined
       }
 
       await updateProduct(editingProduct.id, request)
       handleCancelEdit()
-      await fetchData()
+      await fetchData(searchQuery, categoryFilter)
     } catch (e) {
       setActionError(e instanceof ApiError ? e.message : 'Failed to update product')
     }
@@ -232,7 +268,7 @@ export function Products() {
     setActionError(null)
     try {
       await deleteProduct(id)
-      await fetchData()
+      await fetchData(searchQuery, categoryFilter)
     } catch (e) {
       setActionError(e instanceof ApiError ? e.message : 'Failed to delete product')
     }
@@ -268,12 +304,52 @@ export function Products() {
     setModalIndex(0)
   }
 
+  const getCategoryLabel = (value: string): string => {
+    const cat = categories.find(c => c.value === value)
+    return cat?.label || value
+  }
+
   if (loading) return <div className="loading">Loading equipment...</div>
   if (error) return <div className="error">{error}</div>
 
   return (
     <div className="section">
       <h2>Equipment Listings</h2>
+
+      <form onSubmit={handleSearch} className="search-form">
+        <input
+          type="text"
+          placeholder="Search equipment..."
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          className="search-input"
+        />
+        <select
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value)}
+          className="category-select"
+        >
+          <option value="">All Categories</option>
+          {categories.map(cat => (
+            <option key={cat.value} value={cat.value}>{cat.label}</option>
+          ))}
+        </select>
+        <button type="submit" className="search-btn">Search</button>
+        {(searchQuery || categoryFilter) && (
+          <button type="button" onClick={handleClearSearch} className="clear-search-btn">
+            Clear
+          </button>
+        )}
+      </form>
+
+      {(searchQuery || categoryFilter) && (
+        <p className="search-results-info">
+          {searchQuery && `Results for "${searchQuery}"`}
+          {searchQuery && categoryFilter && ' in '}
+          {categoryFilter && getCategoryLabel(categoryFilter)}
+          {' '}({products.length} found)
+        </p>
+      )}
 
       {user ? (
         <form onSubmit={handleAddProduct} className="form product-form">
@@ -285,6 +361,17 @@ export function Products() {
               onChange={(e) => setName(e.target.value)}
               required
             />
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="category-select"
+              required
+            >
+              <option value="">Select Category</option>
+              {categories.map(cat => (
+                <option key={cat.value} value={cat.value}>{cat.label}</option>
+              ))}
+            </select>
             <input
               type="number"
               placeholder="Price (Lei)"
@@ -360,6 +447,7 @@ export function Products() {
                 </div>
                 <div className="product-info">
                   <h3 className="product-name">{product.name}</h3>
+                  <span className="category-badge">{getCategoryLabel(product.category)}</span>
                   <p className="product-price">{product.price.toFixed(2)} Lei</p>
                 </div>
               </Link>
@@ -410,6 +498,20 @@ export function Products() {
                   onChange={(e) => setEditDescription(e.target.value)}
                   rows={3}
                 />
+              </div>
+              <div className="form-group">
+                <label>Category</label>
+                <select
+                  value={editCategory}
+                  onChange={(e) => setEditCategory(e.target.value)}
+                  className="category-select"
+                  required
+                >
+                  <option value="">Select Category</option>
+                  {categories.map(cat => (
+                    <option key={cat.value} value={cat.value}>{cat.label}</option>
+                  ))}
+                </select>
               </div>
               <div className="form-group">
                 <label>Price (Lei)</label>

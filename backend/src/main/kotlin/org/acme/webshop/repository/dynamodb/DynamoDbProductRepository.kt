@@ -2,6 +2,7 @@ package org.acme.webshop.repository.dynamodb
 
 import io.quarkus.arc.profile.IfBuildProfile
 import jakarta.enterprise.context.ApplicationScoped
+import org.acme.webshop.domain.Category
 import org.acme.webshop.domain.Product
 import org.acme.webshop.repository.ProductRepository
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient
@@ -30,6 +31,7 @@ class DynamoDbProductRepository(
             "id" to AttributeValue.builder().s(product.id).build(),
             "name" to AttributeValue.builder().s(product.name).build(),
             "price" to AttributeValue.builder().n(product.price.toPlainString()).build(),
+            "category" to AttributeValue.builder().s(product.category.name).build(),
             "ownerId" to AttributeValue.builder().s(product.ownerId).build(),
             "createdAt" to AttributeValue.builder().s(product.createdAt.toString()).build()
         )
@@ -94,6 +96,28 @@ class DynamoDbProductRepository(
         return response.items().map { it.toProduct() }
     }
 
+    override fun search(query: String?, category: Category?, limit: Int, offset: Int): List<Product> {
+        val lowerQuery = query?.lowercase()
+        val response = dynamoDb.scan(
+            ScanRequest.builder()
+                .tableName(TABLE_NAME)
+                .build()
+        )
+
+        return response.items()
+            .map { it.toProduct() }
+            .filter { product ->
+                val matchesQuery = lowerQuery == null ||
+                    product.name.lowercase().contains(lowerQuery) ||
+                    product.description?.lowercase()?.contains(lowerQuery) == true
+                val matchesCategory = category == null || product.category == category
+                matchesQuery && matchesCategory
+            }
+            .sortedByDescending { it.createdAt }
+            .drop(offset)
+            .take(limit)
+    }
+
     override fun deleteById(id: String): Boolean {
         findById(id) ?: return false
 
@@ -114,11 +138,13 @@ class DynamoDbProductRepository(
     }
 
     private fun Map<String, AttributeValue>.toProduct(): Product {
+        val categoryStr = this["category"]?.s() ?: "OTHER"
         return Product(
             id = this["id"]?.s() ?: error("Missing id"),
             name = this["name"]?.s() ?: error("Missing name"),
             description = this["description"]?.s(),
             price = BigDecimal(this["price"]?.n() ?: error("Missing price")),
+            category = Category.fromString(categoryStr) ?: Category.OTHER,
             ownerId = this["ownerId"]?.s() ?: error("Missing ownerId"),
             images = this["images"]?.l()?.mapNotNull { it.s() } ?: emptyList(),
             createdAt = Instant.parse(this["createdAt"]?.s() ?: error("Missing createdAt"))

@@ -1,6 +1,7 @@
 package org.acme.webshop.service
 
 import jakarta.enterprise.context.ApplicationScoped
+import org.acme.webshop.domain.Category
 import org.acme.webshop.domain.Product
 import org.acme.webshop.repository.ProductRepository
 import java.math.BigDecimal
@@ -12,6 +13,7 @@ sealed class CreateProductResult {
     object NameRequired : CreateProductResult()
     object PriceRequired : CreateProductResult()
     object PriceMustBePositive : CreateProductResult()
+    object CategoryRequired : CreateProductResult()
     object TooManyImages : CreateProductResult()
     object ImageTooLarge : CreateProductResult()
     object DescriptionTooLong : CreateProductResult()
@@ -24,6 +26,7 @@ sealed class UpdateProductResult {
     object NameRequired : UpdateProductResult()
     object PriceRequired : UpdateProductResult()
     object PriceMustBePositive : UpdateProductResult()
+    object CategoryRequired : UpdateProductResult()
     object TooManyImages : UpdateProductResult()
     object ImageTooLarge : UpdateProductResult()
     object DescriptionTooLong : UpdateProductResult()
@@ -43,12 +46,14 @@ class ProductService(
         const val MAX_IMAGE_SIZE_BYTES = 100_000
         const val MAX_IMAGES = 3
         const val MAX_DESCRIPTION_LENGTH = 2000
+        const val DEFAULT_SEARCH_LIMIT = 20
     }
 
     fun createProduct(
         name: String?,
         description: String?,
         price: BigDecimal?,
+        category: Category?,
         ownerId: String,
         images: List<String>? = null
     ): CreateProductResult {
@@ -62,6 +67,10 @@ class ProductService(
 
         if (price <= BigDecimal.ZERO) {
             return CreateProductResult.PriceMustBePositive
+        }
+
+        if (category == null) {
+            return CreateProductResult.CategoryRequired
         }
 
         if (description != null && description.length > MAX_DESCRIPTION_LENGTH) {
@@ -82,6 +91,7 @@ class ProductService(
             name = name,
             description = description?.takeIf { it.isNotBlank() },
             price = price,
+            category = category,
             ownerId = ownerId,
             images = imageList,
             createdAt = Instant.now()
@@ -97,6 +107,7 @@ class ProductService(
         name: String?,
         description: String?,
         price: BigDecimal?,
+        category: Category?,
         images: List<String>?
     ): UpdateProductResult {
         val existing = productRepository.findById(id)
@@ -118,6 +129,10 @@ class ProductService(
             return UpdateProductResult.PriceMustBePositive
         }
 
+        if (category == null) {
+            return UpdateProductResult.CategoryRequired
+        }
+
         if (description != null && description.length > MAX_DESCRIPTION_LENGTH) {
             return UpdateProductResult.DescriptionTooLong
         }
@@ -135,6 +150,7 @@ class ProductService(
             name = name,
             description = description?.takeIf { it.isNotBlank() },
             price = price,
+            category = category,
             images = imageList
         )
 
@@ -147,6 +163,13 @@ class ProductService(
     fun findByOwnerId(ownerId: String): List<Product> = productRepository.findByOwnerId(ownerId)
 
     fun findById(id: String): Product? = productRepository.findById(id)
+
+    fun search(
+        query: String? = null,
+        category: Category? = null,
+        limit: Int = DEFAULT_SEARCH_LIMIT,
+        offset: Int = 0
+    ): List<Product> = productRepository.search(query, category, limit, offset)
 
     fun deleteProduct(id: String, requestingUserId: String): DeleteProductResult {
         val product = productRepository.findById(id)

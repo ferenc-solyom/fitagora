@@ -8,7 +8,8 @@ import type {
   RegisterRequest,
   LoginRequest,
   AuthResponse,
-  User
+  User,
+  Category
 } from './types'
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080').replace(/\/+$/, '')
@@ -84,8 +85,25 @@ export async function getMe(): Promise<User> {
 }
 
 // Products API
-export async function getProducts(): Promise<Product[]> {
-  const response = await fetch(`${API_BASE_URL}/api/products`)
+export interface SearchParams {
+  q?: string
+  category?: string
+  limit?: number
+  offset?: number
+}
+
+export async function getCategories(): Promise<Category[]> {
+  const response = await fetch(`${API_BASE_URL}/api/products/categories`)
+  return handleResponse<Category[]>(response)
+}
+
+export async function getProducts(params?: SearchParams): Promise<Product[]> {
+  const url = new URL(`${API_BASE_URL}/api/products`)
+  if (params?.q) url.searchParams.set('q', params.q)
+  if (params?.category) url.searchParams.set('category', params.category)
+  if (params?.limit) url.searchParams.set('limit', params.limit.toString())
+  if (params?.offset) url.searchParams.set('offset', params.offset.toString())
+  const response = await fetch(url.toString())
   return handleResponse<Product[]>(response)
 }
 

@@ -136,6 +136,7 @@ export function ProductDetailPage() {
         <div className="product-detail-info">
           <div className="product-detail-header">
             <h1>{product.name}</h1>
+            <span className="category-badge large">{product.categoryDisplayName}</span>
             <p className="product-detail-price">{product.price.toFixed(2)} Lei</p>
           </div>
 

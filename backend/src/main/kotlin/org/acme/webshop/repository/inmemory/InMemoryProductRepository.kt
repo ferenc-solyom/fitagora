@@ -2,6 +2,7 @@ package org.acme.webshop.repository.inmemory
 
 import io.quarkus.arc.profile.UnlessBuildProfile
 import jakarta.enterprise.context.ApplicationScoped
+import org.acme.webshop.domain.Category
 import org.acme.webshop.domain.Product
 import org.acme.webshop.repository.ProductRepository
 import java.util.concurrent.ConcurrentHashMap
@@ -23,6 +24,21 @@ class InMemoryProductRepository : ProductRepository {
 
     override fun findByOwnerId(ownerId: String): List<Product> =
         products.values.filter { it.ownerId == ownerId }
+
+    override fun search(query: String?, category: Category?, limit: Int, offset: Int): List<Product> {
+        val lowerQuery = query?.lowercase()
+        return products.values
+            .filter { product ->
+                val matchesQuery = lowerQuery == null ||
+                    product.name.lowercase().contains(lowerQuery) ||
+                    product.description?.lowercase()?.contains(lowerQuery) == true
+                val matchesCategory = category == null || product.category == category
+                matchesQuery && matchesCategory
+            }
+            .sortedByDescending { it.createdAt }
+            .drop(offset)
+            .take(limit)
+    }
 
     override fun deleteById(id: String): Boolean = products.remove(id) != null
 

@@ -1,8 +1,14 @@
+export interface Category {
+  value: string
+  label: string
+}
+
 export interface Product {
   id: string
   name: string
   description: string | null
   price: number
+  category: string
   ownerId: string
   images: string[]
   createdAt: string
@@ -20,6 +26,8 @@ export interface ProductDetail {
   name: string
   description: string | null
   price: number
+  category: string
+  categoryDisplayName: string
   images: string[]
   createdAt: string
   seller: SellerInfo
@@ -36,6 +44,7 @@ export interface CreateProductRequest {
   name: string
   description?: string
   price: number
+  category: string
   images?: string[]
 }
 
@@ -43,6 +52,7 @@ export interface UpdateProductRequest {
   name: string
   description?: string
   price: number
+  category: string
   images?: string[]
 }
 

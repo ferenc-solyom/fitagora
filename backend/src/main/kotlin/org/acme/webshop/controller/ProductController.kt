@@ -10,6 +10,7 @@ import jakarta.ws.rs.PUT
 import jakarta.ws.rs.Path
 import jakarta.ws.rs.PathParam
 import jakarta.ws.rs.Produces
+import jakarta.ws.rs.QueryParam
 import jakarta.ws.rs.core.Context
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
@@ -18,6 +19,7 @@ import org.acme.webshop.controller.ResponseUtils.badRequest
 import org.acme.webshop.controller.ResponseUtils.forbidden
 import org.acme.webshop.controller.ResponseUtils.notFound
 import org.acme.webshop.controller.ResponseUtils.unauthorized
+import org.acme.webshop.domain.Category
 import org.acme.webshop.domain.Product
 import org.acme.webshop.dto.CreateProductRequest
 import org.acme.webshop.dto.SellerInfo
@@ -46,10 +48,13 @@ class ProductController(
         val userId = securityContext.userPrincipal?.name
             ?: return unauthorized("authentication required")
 
+        val category = request.category?.let { Category.fromString(it) }
+
         return when (val result = productService.createProduct(
             request.name,
             request.description,
             request.price,
+            category,
             userId,
             request.images
         )) {
@@ -59,6 +64,7 @@ class ProductController(
             is CreateProductResult.NameRequired -> badRequest("name is required")
             is CreateProductResult.PriceRequired -> badRequest("price is required")
             is CreateProductResult.PriceMustBePositive -> badRequest("price must be greater than zero")
+            is CreateProductResult.CategoryRequired -> badRequest("category is required")
             is CreateProductResult.TooManyImages -> badRequest("maximum 3 images allowed")
             is CreateProductResult.ImageTooLarge -> badRequest("each image must be smaller than 100KB")
             is CreateProductResult.DescriptionTooLong -> badRequest("description must be at most 2000 characters")
@@ -76,12 +82,15 @@ class ProductController(
         val userId = securityContext.userPrincipal?.name
             ?: return unauthorized("authentication required")
 
+        val category = request.category?.let { Category.fromString(it) }
+
         return when (val result = productService.updateProduct(
             id,
             userId,
             request.name,
             request.description,
             request.price,
+            category,
             request.images
         )) {
             is UpdateProductResult.Success -> Response.ok(result.product).build()
@@ -90,6 +99,7 @@ class ProductController(
             is UpdateProductResult.NameRequired -> badRequest("name is required")
             is UpdateProductResult.PriceRequired -> badRequest("price is required")
             is UpdateProductResult.PriceMustBePositive -> badRequest("price must be greater than zero")
+            is UpdateProductResult.CategoryRequired -> badRequest("category is required")
             is UpdateProductResult.TooManyImages -> badRequest("maximum 3 images allowed")
             is UpdateProductResult.ImageTooLarge -> badRequest("each image must be smaller than 100KB")
             is UpdateProductResult.DescriptionTooLong -> badRequest("description must be at most 2000 characters")
@@ -98,7 +108,23 @@ class ProductController(
 
     @GET
     @PermitAll
-    fun getAllProducts(): List<Product> = productService.findAll()
+    fun getAllProducts(
+        @QueryParam("q") query: String?,
+        @QueryParam("category") categoryParam: String?,
+        @QueryParam("limit") limit: Int?,
+        @QueryParam("offset") offset: Int?
+    ): List<Product> {
+        val category = categoryParam?.let { Category.fromString(it) }
+        if (query.isNullOrBlank() && category == null) {
+            return productService.findAll()
+        }
+        return productService.search(
+            query = query?.takeIf { it.isNotBlank() },
+            category = category,
+            limit = limit ?: 20,
+            offset = offset ?: 0
+        )
+    }
 
     @GET
     @Path("/{id}")
@@ -125,6 +151,18 @@ class ProductController(
         }
 
         return Response.ok(product.toDetailResponse(sellerInfo)).build()
+    }
+
+    @GET
+    @Path("/categories")
+    @PermitAll
+    fun getCategories(): List<Map<String, String>> {
+        return Category.entries.map { category ->
+            mapOf(
+                "value" to category.name,
+                "label" to category.displayName
+            )
+        }
     }
 
     @GET
