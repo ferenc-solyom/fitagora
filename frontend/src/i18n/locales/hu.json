@@ -1,0 +1,130 @@
+{
+  "common": {
+    "loading": "Betöltés...",
+    "error": "Hiba",
+    "save": "Mentés",
+    "cancel": "Mégse",
+    "delete": "Törlés",
+    "edit": "Szerkesztés",
+    "view": "Megnézés",
+    "search": "Keresés",
+    "clear": "Törlés",
+    "poweredBy": "Készítette"
+  },
+  "nav": {
+    "products": "Termékek",
+    "favorites": "Kedvencek",
+    "login": "Bejelentkezés / Regisztráció",
+    "logout": "Kijelentkezés",
+    "greeting": "Szia, {{name}}"
+  },
+  "auth": {
+    "login": "Bejelentkezés",
+    "register": "Regisztráció",
+    "email": "Email",
+    "password": "Jelszó",
+    "passwordHint": "Jelszó (minimum 8 karakter)",
+    "firstName": "Keresztnév",
+    "lastName": "Vezetéknév",
+    "phoneNumber": "Telefonszám (opcionális)",
+    "loggingIn": "Bejelentkezés...",
+    "registering": "Regisztráció...",
+    "unexpectedError": "Váratlan hiba történt"
+  },
+  "products": {
+    "title": "Elérhető felszerelések",
+    "searchPlaceholder": "Felszerelés keresése...",
+    "allCategories": "Összes kategória",
+    "addProduct": "Felszerelés hozzáadása",
+    "noProducts": "Még nincs felszerelés. Légy az első, aki elad!",
+    "loginToSell": "Jelentkezz be, hogy felsorolhasd az eladó fitnesz felszereléseidet.",
+    "yours": "Tiéd",
+    "photos": "{{count}} kép",
+    "resultsFor": "Találatok: \"{{query}}\"",
+    "resultsIn": "kategóriában",
+    "productsCount": "{{count}} termék",
+    "productsCount_plural": "{{count}} termék",
+    "pageInfo": "({{current}}. oldal / {{total}})",
+    "form": {
+      "namePlaceholder": "Felszerelés neve (pl.: Súlyzókészlet)",
+      "selectCategory": "Válassz kategóriát",
+      "pricePlaceholder": "Ár (Lei)",
+      "descriptionPlaceholder": "Leírás (opcionális)",
+      "addPhotos": "Képek hozzáadása ({{current}}/{{max}})",
+      "processing": "Feldolgozás...",
+      "listEquipment": "Felszerelés felsorolása",
+      "maxImages": "Maximum {{max}} kép engedélyezett"
+    },
+    "edit": {
+      "title": "Termék szerkesztése",
+      "name": "Név",
+      "description": "Leírás",
+      "category": "Kategória",
+      "price": "Ár (Lei)",
+      "images": "Képek ({{current}}/{{max}})",
+      "saveChanges": "Változások mentése"
+    },
+    "actions": {
+      "edit": "Szerkesztés",
+      "remove": "Törlés",
+      "view": "Megnézés"
+    },
+    "errors": {
+      "loadFailed": "Nem sikerült betölteni a termékeket",
+      "addFailed": "Nem sikerült hozzáadni a terméket",
+      "updateFailed": "Nem sikerült frissíteni a terméket",
+      "deleteFailed": "Nem sikerült törölni a terméket",
+      "favoriteFailed": "Nem sikerült frissíteni a kedvencet",
+      "pricePositive": "Az árnak pozitív számnak kell lennie",
+      "selectCategory": "Kérlek, válassz kategóriát"
+    }
+  },
+  "favorites": {
+    "title": "Kedvenceim",
+    "loading": "Kedvencek betöltése...",
+    "empty": "Még nincsenek kedvencek. Nézd át a felszereléseket, és kattints a csillagra a mentéshez!",
+    "viewDetails": "Részletek",
+    "removeTooltip": "Eltávolítás a kedvencekből",
+    "errors": {
+      "loadFailed": "Nem sikerült betölteni a kedvenceket",
+      "removeFailed": "Nem sikerült eltávolítani a kedvencet"
+    }
+  },
+  "productDetail": {
+    "loading": "Termék betöltése...",
+    "notFound": "Termék nem található",
+    "backToProducts": "Vissza a termékekhez",
+    "noPhotos": "Nincs elérhető kép",
+    "description": "Leírás",
+    "sellerInfo": "Eladó információi",
+    "deleteProduct": "Termék törlése",
+    "addToFavorites": "Hozzáadás a kedvencekhez",
+    "removeFromFavorites": "Eltávolítás a kedvencekből",
+    "contactSeller": "Kapcsolatfelvétel az eladóval",
+    "listedOn": "Felsorolva: {{date}}",
+    "confirmDelete": "Biztosan törölni szeretnéd ezt a terméket?",
+    "errors": {
+      "loadFailed": "Nem sikerült betölteni a terméket",
+      "deleteFailed": "Nem sikerült törölni a terméket",
+      "favoriteFailed": "Nem sikerült frissíteni a kedvencet"
+    }
+  },
+  "pagination": {
+    "first": "Első oldal",
+    "previous": "Előző oldal",
+    "next": "Következő oldal",
+    "last": "Utolsó oldal"
+  },
+  "categories": {
+    "CARDIO": "Kardió",
+    "STRENGTH": "Erő",
+    "MOBILITY": "Mobilitás",
+    "RECOVERY": "Regenerálás",
+    "HOME_GYM": "Otthoni edzés",
+    "ACCESSORIES": "Kiegészítők",
+    "PLYOMETRICS": "Pliometria",
+    "CORE": "Törzsedzés",
+    "OUTDOOR": "Kültéri/Funkcionális",
+    "OTHER": "Egyéb"
+  }
+}

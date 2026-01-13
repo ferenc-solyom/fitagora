@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import type { Favorite, Product } from '../types'
 import { getFavorites, getProducts, removeFavorite, ApiError } from '../api'
 
 export function Favorites() {
+  const { t } = useTranslation()
   const [favorites, setFavorites] = useState<Favorite[]>([])
   const [products, setProducts] = useState<Map<string, Product>>(new Map())
   const [loading, setLoading] = useState(true)
@@ -19,10 +21,10 @@ export function Favorites() {
         getProducts()
       ])
       setFavorites(favoritesData)
-      const productMap = new Map(productsData.map(p => [p.id, p]))
+      const productMap = new Map(productsData.items.map(p => [p.id, p]))
       setProducts(productMap)
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'Failed to load favorites')
+      setError(e instanceof ApiError ? e.message : t('favorites.errors.loadFailed'))
     } finally {
       setLoading(false)
     }
@@ -38,21 +40,21 @@ export function Favorites() {
       await removeFavorite(productId)
       setFavorites(prev => prev.filter(f => f.productId !== productId))
     } catch (e) {
-      setActionError(e instanceof ApiError ? e.message : 'Failed to remove favorite')
+      setActionError(e instanceof ApiError ? e.message : t('favorites.errors.removeFailed'))
     }
   }
 
-  if (loading) return <div className="loading">Loading favorites...</div>
+  if (loading) return <div className="loading">{t('favorites.loading')}</div>
   if (error) return <div className="error">{error}</div>
 
   return (
     <div className="section">
-      <h2>My Favorites</h2>
+      <h2>{t('favorites.title')}</h2>
 
       {actionError && <div className="error">{actionError}</div>}
 
       {favorites.length === 0 ? (
-        <p className="empty-state">No favorites yet. Browse equipment and click the star to save items!</p>
+        <p className="empty-state">{t('favorites.empty')}</p>
       ) : (
         <div className="products-grid">
           {favorites.map((favorite) => {
@@ -84,13 +86,13 @@ export function Favorites() {
                   <button
                     onClick={() => handleRemoveFavorite(product.id)}
                     className="favorite-btn favorited"
-                    title="Remove from favorites"
+                    title={t('favorites.removeTooltip')}
                   >
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2">
                       <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                     </svg>
                   </button>
-                  <Link to={`/products/${product.id}`} className="view-btn">View Details</Link>
+                  <Link to={`/products/${product.id}`} className="view-btn">{t('favorites.viewDetails')}</Link>
                 </div>
               </div>
             )

@@ -97,6 +97,17 @@ class DynamoDbProductRepository(
     }
 
     override fun search(query: String?, category: Category?, limit: Int, offset: Int): List<Product> {
+        return filterProducts(query, category)
+            .sortedByDescending { it.createdAt }
+            .drop(offset)
+            .take(limit)
+    }
+
+    override fun count(query: String?, category: Category?): Int {
+        return filterProducts(query, category).size
+    }
+
+    private fun filterProducts(query: String?, category: Category?): List<Product> {
         val lowerQuery = query?.lowercase()
         val response = dynamoDb.scan(
             ScanRequest.builder()
@@ -113,9 +124,6 @@ class DynamoDbProductRepository(
                 val matchesCategory = category == null || product.category == category
                 matchesQuery && matchesCategory
             }
-            .sortedByDescending { it.createdAt }
-            .drop(offset)
-            .take(limit)
     }
 
     override fun deleteById(id: String): Boolean {
@@ -139,6 +147,7 @@ class DynamoDbProductRepository(
 
     private fun Map<String, AttributeValue>.toProduct(): Product {
         val categoryStr = this["category"]?.s() ?: "OTHER"
+        val images = parseImages(this["images"])
         return Product(
             id = this["id"]?.s() ?: error("Missing id"),
             name = this["name"]?.s() ?: error("Missing name"),
@@ -146,8 +155,25 @@ class DynamoDbProductRepository(
             price = BigDecimal(this["price"]?.n() ?: error("Missing price")),
             category = Category.fromString(categoryStr) ?: Category.OTHER,
             ownerId = this["ownerId"]?.s() ?: error("Missing ownerId"),
-            images = this["images"]?.l()?.mapNotNull { it.s() } ?: emptyList(),
+            images = images,
             createdAt = Instant.parse(this["createdAt"]?.s() ?: error("Missing createdAt"))
         )
+    }
+
+    private fun parseImages(attr: AttributeValue?): List<String> {
+        if (attr == null) return emptyList()
+
+        // Handle List type (L)
+        if (attr.hasL()) {
+            return attr.l().mapNotNull { it.s() }
+        }
+
+        // Handle single String type (S) - for backwards compatibility
+        val singleImage = attr.s()
+        if (!singleImage.isNullOrBlank()) {
+            return listOf(singleImage)
+        }
+
+        return emptyList()
     }
 }

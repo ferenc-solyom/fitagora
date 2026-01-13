@@ -9,7 +9,8 @@ import type {
   LoginRequest,
   AuthResponse,
   User,
-  Category
+  Category,
+  PaginatedResponse
 } from './types'
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080').replace(/\/+$/, '')
@@ -97,14 +98,14 @@ export async function getCategories(): Promise<Category[]> {
   return handleResponse<Category[]>(response)
 }
 
-export async function getProducts(params?: SearchParams): Promise<Product[]> {
+export async function getProducts(params?: SearchParams): Promise<PaginatedResponse<Product>> {
   const url = new URL(`${API_BASE_URL}/api/products`)
   if (params?.q) url.searchParams.set('q', params.q)
   if (params?.category) url.searchParams.set('category', params.category)
   if (params?.limit) url.searchParams.set('limit', params.limit.toString())
   if (params?.offset) url.searchParams.set('offset', params.offset.toString())
   const response = await fetch(url.toString())
-  return handleResponse<Product[]>(response)
+  return handleResponse<PaginatedResponse<Product>>(response)
 }
 
 export async function getProduct(id: string): Promise<ProductDetail> {

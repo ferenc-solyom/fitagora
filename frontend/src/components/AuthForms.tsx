@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { login as apiLogin, register as apiRegister, ApiError } from '../api'
 import { useAuth } from '../context/AuthContext'
 import type { LoginRequest, RegisterRequest } from '../types'
@@ -6,6 +7,7 @@ import type { LoginRequest, RegisterRequest } from '../types'
 type AuthMode = 'login' | 'register'
 
 export function AuthForms() {
+  const { t } = useTranslation()
   const [mode, setMode] = useState<AuthMode>('login')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -36,7 +38,7 @@ export function AuthForms() {
       if (err instanceof ApiError) {
         setError(err.message)
       } else {
-        setError('An unexpected error occurred')
+        setError(t('auth.unexpectedError'))
       }
     } finally {
       setLoading(false)
@@ -55,7 +57,7 @@ export function AuthForms() {
       if (err instanceof ApiError) {
         setError(err.message)
       } else {
-        setError('An unexpected error occurred')
+        setError(t('auth.unexpectedError'))
       }
     } finally {
       setLoading(false)
@@ -74,13 +76,13 @@ export function AuthForms() {
           className={mode === 'login' ? 'active' : ''}
           onClick={() => switchMode('login')}
         >
-          Login
+          {t('auth.login')}
         </button>
         <button
           className={mode === 'register' ? 'active' : ''}
           onClick={() => switchMode('register')}
         >
-          Register
+          {t('auth.register')}
         </button>
       </div>
 
@@ -89,7 +91,7 @@ export function AuthForms() {
       {mode === 'login' ? (
         <form onSubmit={handleLogin} className="auth-form">
           <div className="form-group">
-            <label htmlFor="login-email">Email</label>
+            <label htmlFor="login-email">{t('auth.email')}</label>
             <input
               id="login-email"
               type="email"
@@ -99,7 +101,7 @@ export function AuthForms() {
             />
           </div>
           <div className="form-group">
-            <label htmlFor="login-password">Password</label>
+            <label htmlFor="login-password">{t('auth.password')}</label>
             <input
               id="login-password"
               type="password"
@@ -109,14 +111,14 @@ export function AuthForms() {
             />
           </div>
           <button type="submit" disabled={loading}>
-            {loading ? 'Logging in...' : 'Login'}
+            {loading ? t('auth.loggingIn') : t('auth.login')}
           </button>
         </form>
       ) : (
         <form onSubmit={handleRegister} className="auth-form">
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="register-firstName">First Name</label>
+              <label htmlFor="register-firstName">{t('auth.firstName')}</label>
               <input
                 id="register-firstName"
                 type="text"
@@ -126,7 +128,7 @@ export function AuthForms() {
               />
             </div>
             <div className="form-group">
-              <label htmlFor="register-lastName">Last Name</label>
+              <label htmlFor="register-lastName">{t('auth.lastName')}</label>
               <input
                 id="register-lastName"
                 type="text"
@@ -137,7 +139,7 @@ export function AuthForms() {
             </div>
           </div>
           <div className="form-group">
-            <label htmlFor="register-email">Email</label>
+            <label htmlFor="register-email">{t('auth.email')}</label>
             <input
               id="register-email"
               type="email"
@@ -147,7 +149,7 @@ export function AuthForms() {
             />
           </div>
           <div className="form-group">
-            <label htmlFor="register-password">Password (min 8 characters)</label>
+            <label htmlFor="register-password">{t('auth.passwordHint')}</label>
             <input
               id="register-password"
               type="password"
@@ -158,7 +160,7 @@ export function AuthForms() {
             />
           </div>
           <div className="form-group">
-            <label htmlFor="register-phone">Phone Number (optional)</label>
+            <label htmlFor="register-phone">{t('auth.phoneNumber')}</label>
             <input
               id="register-phone"
               type="tel"
@@ -167,7 +169,7 @@ export function AuthForms() {
             />
           </div>
           <button type="submit" disabled={loading}>
-            {loading ? 'Registering...' : 'Register'}
+            {loading ? t('auth.registering') : t('auth.register')}
           </button>
         </form>
       )}

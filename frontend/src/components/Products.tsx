@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import type { Product, Favorite, UpdateProductRequest, Category } from '../types'
 import {
   getProducts,
@@ -17,6 +18,7 @@ import { useAuth } from '../context/AuthContext'
 const MAX_IMAGE_SIZE = 100 * 1024
 const MAX_IMAGE_DIMENSION = 800
 const MAX_IMAGES = 3
+const PAGE_SIZE = 12
 
 async function compressImage(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -70,6 +72,7 @@ async function compressImage(file: File): Promise<string> {
 }
 
 export function Products() {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const [products, setProducts] = useState<Product[]>([])
   const [favorites, setFavorites] = useState<Set<string>>(new Set())
@@ -79,6 +82,8 @@ export function Products() {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchInput, setSearchInput] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalProducts, setTotalProducts] = useState(0)
   const [name, setName] = useState('')
   const [category, setCategory] = useState('')
   const [description, setDescription] = useState('')
@@ -97,16 +102,23 @@ export function Products() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const editFileInputRef = useRef<HTMLInputElement>(null)
 
-  const fetchData = async (query?: string, catFilter?: string) => {
+  const fetchData = async (query?: string, catFilter?: string, page: number = 1) => {
     try {
       setLoading(true)
       setError(null)
-      const searchParams = (query || catFilter) ? { q: query || undefined, category: catFilter || undefined } : undefined
-      const [productsData, favoritesData] = await Promise.all([
+      const offset = (page - 1) * PAGE_SIZE
+      const searchParams = {
+        q: query || undefined,
+        category: catFilter || undefined,
+        limit: PAGE_SIZE,
+        offset
+      }
+      const [paginatedData, favoritesData] = await Promise.all([
         getProducts(searchParams),
         user ? getFavorites() : Promise.resolve([])
       ])
-      setProducts(productsData)
+      setProducts(paginatedData.items)
+      setTotalProducts(paginatedData.total)
       setFavorites(new Set(favoritesData.map((f: Favorite) => f.productId)))
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'Failed to load products')
@@ -120,11 +132,12 @@ export function Products() {
   }, [])
 
   useEffect(() => {
-    fetchData(searchQuery, categoryFilter)
-  }, [user, searchQuery, categoryFilter])
+    fetchData(searchQuery, categoryFilter, currentPage)
+  }, [user, searchQuery, categoryFilter, currentPage])
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
+    setCurrentPage(1)
     setSearchQuery(searchInput.trim())
   }
 
@@ -132,6 +145,21 @@ export function Products() {
     setSearchInput('')
     setSearchQuery('')
     setCategoryFilter('')
+    setCurrentPage(1)
+  }
+
+  const handleCategoryChange = (value: string) => {
+    setCurrentPage(1)
+    setCategoryFilter(value)
+  }
+
+  const totalPages = Math.ceil(totalProducts / PAGE_SIZE)
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
   }
 
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>, isEdit = false) => {
@@ -207,7 +235,8 @@ export function Products() {
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }
-      await fetchData(searchQuery, categoryFilter)
+      setCurrentPage(1)
+      await fetchData(searchQuery, categoryFilter, 1)
     } catch (e) {
       setActionError(e instanceof ApiError ? e.message : 'Failed to add product')
     }
@@ -258,7 +287,7 @@ export function Products() {
 
       await updateProduct(editingProduct.id, request)
       handleCancelEdit()
-      await fetchData(searchQuery, categoryFilter)
+      await fetchData(searchQuery, categoryFilter, currentPage)
     } catch (e) {
       setActionError(e instanceof ApiError ? e.message : 'Failed to update product')
     }
@@ -268,7 +297,13 @@ export function Products() {
     setActionError(null)
     try {
       await deleteProduct(id)
-      await fetchData(searchQuery, categoryFilter)
+      // If we deleted the last item on the current page, go back a page
+      const newPage = products.length === 1 && currentPage > 1 ? currentPage - 1 : currentPage
+      if (newPage !== currentPage) {
+        setCurrentPage(newPage)
+      } else {
+        await fetchData(searchQuery, categoryFilter, currentPage)
+      }
     } catch (e) {
       setActionError(e instanceof ApiError ? e.message : 'Failed to delete product')
     }
@@ -305,58 +340,57 @@ export function Products() {
   }
 
   const getCategoryLabel = (value: string): string => {
-    const cat = categories.find(c => c.value === value)
-    return cat?.label || value
+    return t(`categories.${value}`, { defaultValue: value })
   }
 
-  if (loading) return <div className="loading">Loading equipment...</div>
+  if (loading) return <div className="loading">{t('common.loading')}</div>
   if (error) return <div className="error">{error}</div>
 
   return (
     <div className="section">
-      <h2>Equipment Listings</h2>
+      <h2>{t('products.title')}</h2>
 
       <form onSubmit={handleSearch} className="search-form">
         <input
           type="text"
-          placeholder="Search equipment..."
+          placeholder={t('products.searchPlaceholder')}
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
           className="search-input"
         />
         <select
           value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value)}
+          onChange={(e) => handleCategoryChange(e.target.value)}
           className="category-select"
         >
-          <option value="">All Categories</option>
+          <option value="">{t('products.allCategories')}</option>
           {categories.map(cat => (
-            <option key={cat.value} value={cat.value}>{cat.label}</option>
+            <option key={cat.value} value={cat.value}>{t(`categories.${cat.value}`, { defaultValue: cat.label })}</option>
           ))}
         </select>
-        <button type="submit" className="search-btn">Search</button>
+        <button type="submit" className="search-btn">{t('common.search')}</button>
         {(searchQuery || categoryFilter) && (
           <button type="button" onClick={handleClearSearch} className="clear-search-btn">
-            Clear
+            {t('common.clear')}
           </button>
         )}
       </form>
 
-      {(searchQuery || categoryFilter) && (
-        <p className="search-results-info">
-          {searchQuery && `Results for "${searchQuery}"`}
-          {searchQuery && categoryFilter && ' in '}
-          {categoryFilter && getCategoryLabel(categoryFilter)}
-          {' '}({products.length} found)
-        </p>
-      )}
+      <p className="search-results-info">
+        {searchQuery && t('products.resultsFor', { query: searchQuery })}
+        {searchQuery && categoryFilter && ` ${t('products.resultsIn')} `}
+        {categoryFilter && getCategoryLabel(categoryFilter)}
+        {(searchQuery || categoryFilter) ? ' - ' : ''}
+        {t('products.productsCount', { count: totalProducts })}
+        {totalPages > 1 && ` ${t('products.pageInfo', { current: currentPage, total: totalPages })}`}
+      </p>
 
       {user ? (
         <form onSubmit={handleAddProduct} className="form product-form">
           <div className="form-main-inputs">
             <input
               type="text"
-              placeholder="Equipment name (e.g., Dumbbell Set)"
+              placeholder={t('products.form.namePlaceholder')}
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
@@ -367,14 +401,14 @@ export function Products() {
               className="category-select"
               required
             >
-              <option value="">Select Category</option>
+              <option value="">{t('products.form.selectCategory')}</option>
               {categories.map(cat => (
-                <option key={cat.value} value={cat.value}>{cat.label}</option>
+                <option key={cat.value} value={cat.value}>{t(`categories.${cat.value}`, { defaultValue: cat.label })}</option>
               ))}
             </select>
             <input
               type="number"
-              placeholder="Price (Lei)"
+              placeholder={t('products.form.pricePlaceholder')}
               step="0.01"
               min="0.01"
               value={price}
@@ -383,7 +417,7 @@ export function Products() {
             />
           </div>
           <textarea
-            placeholder="Description (optional)"
+            placeholder={t('products.form.descriptionPlaceholder')}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             className="form-textarea"
@@ -400,7 +434,7 @@ export function Products() {
                 style={{ display: 'none' }}
                 disabled={images.length >= MAX_IMAGES}
               />
-              {imageLoading ? 'Processing...' : `Add Photos (${images.length}/${MAX_IMAGES})`}
+              {imageLoading ? t('products.form.processing') : t('products.form.addPhotos', { current: images.length, max: MAX_IMAGES })}
             </label>
             {images.map((img, idx) => (
               <div key={idx} className="image-preview-container">
@@ -409,18 +443,18 @@ export function Products() {
               </div>
             ))}
           </div>
-          <button type="submit" disabled={imageLoading}>List Equipment</button>
+          <button type="submit" disabled={imageLoading}>{t('products.form.listEquipment')}</button>
         </form>
       ) : (
         <p className="auth-prompt" style={{ marginBottom: '20px', paddingBottom: '20px', borderBottom: '1px solid var(--color-border)' }}>
-          Login to list your fitness equipment for sale.
+          {t('products.loginToSell')}
         </p>
       )}
 
       {actionError && <div className="error">{actionError}</div>}
 
       {products.length === 0 ? (
-        <p className="empty-state">No equipment listed yet. Be the first to sell!</p>
+        <p className="empty-state">{t('products.noProducts')}</p>
       ) : (
         <div className="products-grid">
           {products.map((product) => (
@@ -431,7 +465,7 @@ export function Products() {
                     <>
                       <img src={product.images[0]} alt={product.name} className="product-image" />
                       {product.images.length > 1 && (
-                        <span className="image-count">{product.images.length} photos</span>
+                        <span className="image-count">{t('products.photos', { count: product.images.length })}</span>
                       )}
                     </>
                   ) : (
@@ -443,7 +477,7 @@ export function Products() {
                       </svg>
                     </div>
                   )}
-                  {isOwner(product) && <span className="owner-badge">Yours</span>}
+                  {isOwner(product) && <span className="owner-badge">{t('products.yours')}</span>}
                 </div>
                 <div className="product-info">
                   <h3 className="product-name">{product.name}</h3>
@@ -465,11 +499,11 @@ export function Products() {
                 )}
                 {isOwner(product) ? (
                   <>
-                    <button onClick={() => handleStartEdit(product)} className="edit-btn">Edit</button>
-                    <button onClick={() => handleDeleteProduct(product.id)} className="delete-btn">Remove</button>
+                    <button onClick={() => handleStartEdit(product)} className="edit-btn">{t('products.actions.edit')}</button>
+                    <button onClick={() => handleDeleteProduct(product.id)} className="delete-btn">{t('products.actions.remove')}</button>
                   </>
                 ) : (
-                  <Link to={`/products/${product.id}`} className="view-btn">View</Link>
+                  <Link to={`/products/${product.id}`} className="view-btn">{t('products.actions.view')}</Link>
                 )}
               </div>
             </div>
@@ -477,13 +511,80 @@ export function Products() {
         </div>
       )}
 
+      {totalPages > 1 && (
+        <div className="pagination">
+          <button
+            onClick={() => handlePageChange(1)}
+            disabled={currentPage === 1}
+            className="pagination-btn"
+            title={t('pagination.first')}
+          >
+            ««
+          </button>
+          <button
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="pagination-btn"
+            title={t('pagination.previous')}
+          >
+            «
+          </button>
+
+          {Array.from({ length: totalPages }, (_, i) => i + 1)
+            .filter(page => {
+              if (totalPages <= 7) return true
+              if (page === 1 || page === totalPages) return true
+              return Math.abs(page - currentPage) <= 1;
+
+            })
+            .reduce((acc: (number | string)[], page, idx, arr) => {
+              if (idx > 0 && typeof arr[idx - 1] === 'number' && page - (arr[idx - 1] as number) > 1) {
+                acc.push('...')
+              }
+              acc.push(page)
+              return acc
+            }, [])
+            .map((item, idx) => (
+              typeof item === 'string' ? (
+                <span key={`ellipsis-${idx}`} className="pagination-ellipsis">{item}</span>
+              ) : (
+                <button
+                  key={item}
+                  onClick={() => handlePageChange(item)}
+                  className={`pagination-btn ${currentPage === item ? 'active' : ''}`}
+                >
+                  {item}
+                </button>
+              )
+            ))
+          }
+
+          <button
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className="pagination-btn"
+            title={t('pagination.next')}
+          >
+            »
+          </button>
+          <button
+            onClick={() => handlePageChange(totalPages)}
+            disabled={currentPage === totalPages}
+            className="pagination-btn"
+            title={t('pagination.last')}
+          >
+            »»
+          </button>
+        </div>
+      )}
+
       {editingProduct && (
         <div className="edit-modal" onClick={handleCancelEdit}>
           <div className="edit-modal-content" onClick={(e) => e.stopPropagation()}>
-            <h3>Edit Product</h3>
+            <h3>{t('products.edit.title')}</h3>
             <form onSubmit={handleSaveEdit} className="edit-form">
               <div className="form-group">
-                <label>Name</label>
+                <label>{t('products.edit.name')}</label>
                 <input
                   type="text"
                   value={editName}
@@ -492,7 +593,7 @@ export function Products() {
                 />
               </div>
               <div className="form-group">
-                <label>Description</label>
+                <label>{t('products.edit.description')}</label>
                 <textarea
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
@@ -500,21 +601,21 @@ export function Products() {
                 />
               </div>
               <div className="form-group">
-                <label>Category</label>
+                <label>{t('products.edit.category')}</label>
                 <select
                   value={editCategory}
                   onChange={(e) => setEditCategory(e.target.value)}
                   className="category-select"
                   required
                 >
-                  <option value="">Select Category</option>
+                  <option value="">{t('products.form.selectCategory')}</option>
                   {categories.map(cat => (
-                    <option key={cat.value} value={cat.value}>{cat.label}</option>
+                    <option key={cat.value} value={cat.value}>{t(`categories.${cat.value}`, { defaultValue: cat.label })}</option>
                   ))}
                 </select>
               </div>
               <div className="form-group">
-                <label>Price (Lei)</label>
+                <label>{t('products.edit.price')}</label>
                 <input
                   type="number"
                   step="0.01"
@@ -525,7 +626,7 @@ export function Products() {
                 />
               </div>
               <div className="form-group">
-                <label>Images ({editImages.length}/{MAX_IMAGES})</label>
+                <label>{t('products.edit.images', { current: editImages.length, max: MAX_IMAGES })}</label>
                 <div className="edit-images-row">
                   {editImages.map((img, idx) => (
                     <div key={idx} className="image-preview-container">
@@ -549,8 +650,8 @@ export function Products() {
                 </div>
               </div>
               <div className="edit-modal-actions">
-                <button type="button" onClick={handleCancelEdit} className="cancel-btn">Cancel</button>
-                <button type="submit" disabled={imageLoading}>Save Changes</button>
+                <button type="button" onClick={handleCancelEdit} className="cancel-btn">{t('common.cancel')}</button>
+                <button type="submit" disabled={imageLoading}>{t('products.edit.saveChanges')}</button>
               </div>
             </form>
           </div>

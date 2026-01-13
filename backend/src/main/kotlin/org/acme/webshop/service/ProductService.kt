@@ -171,6 +171,9 @@ class ProductService(
         offset: Int = 0
     ): List<Product> = productRepository.search(query, category, limit, offset)
 
+    fun count(query: String? = null, category: Category? = null): Int =
+        productRepository.count(query, category)
+
     fun deleteProduct(id: String, requestingUserId: String): DeleteProductResult {
         val product = productRepository.findById(id)
             ?: return DeleteProductResult.NotFound

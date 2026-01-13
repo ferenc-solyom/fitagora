@@ -1,19 +1,31 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Products } from './components/Products'
 import { Favorites } from './components/Favorites'
 import { useAuth } from './context/AuthContext'
 
 type View = 'products' | 'favorites'
 
+const languages = [
+  { code: 'en', label: 'EN' },
+  { code: 'ro', label: 'RO' },
+  { code: 'hu', label: 'HU' }
+]
+
 function App() {
+  const { t, i18n } = useTranslation()
   const { user, loading, logout } = useAuth()
   const [activeView, setActiveView] = useState<View>('products')
+
+  const changeLanguage = (lng: string) => {
+    i18n.changeLanguage(lng)
+  }
 
   if (loading) {
     return (
       <div className="app">
-        <div className="loading">Loading...</div>
+        <div className="loading">{t('common.loading')}</div>
       </div>
     )
   }
@@ -30,25 +42,36 @@ function App() {
             className={`nav-link ${activeView === 'products' ? 'active' : ''}`}
             onClick={() => setActiveView('products')}
           >
-            Products
+            {t('nav.products')}
           </button>
           {user && (
             <button
               className={`nav-link ${activeView === 'favorites' ? 'active' : ''}`}
               onClick={() => setActiveView('favorites')}
             >
-              Favorites
+              {t('nav.favorites')}
             </button>
           )}
         </div>
         <div className="nav-actions">
+          <div className="language-switcher">
+            {languages.map((lang) => (
+              <button
+                key={lang.code}
+                onClick={() => changeLanguage(lang.code)}
+                className={`lang-btn ${i18n.language === lang.code ? 'active' : ''}`}
+              >
+                {lang.label}
+              </button>
+            ))}
+          </div>
           {user ? (
             <>
-              <span className="nav-user">Hi, {user.firstName}</span>
-              <button onClick={logout} className="nav-btn nav-btn-outline">Logout</button>
+              <span className="nav-user">{t('nav.greeting', { name: user.firstName })}</span>
+              <button onClick={logout} className="nav-btn nav-btn-outline">{t('nav.logout')}</button>
             </>
           ) : (
-            <Link to="/auth" className="nav-btn nav-btn-primary">Login / Register</Link>
+            <Link to="/auth" className="nav-btn nav-btn-primary">{t('nav.login')}</Link>
           )}
         </div>
       </nav>
@@ -62,7 +85,7 @@ function App() {
       </main>
 
       <footer className="footer">
-        Powered by <a href="https://www.linkedin.com/in/ferenc-solyom/" target="_blank" rel="noopener noreferrer">Ferenc Solyom</a>
+        {t('common.poweredBy')} <a href="https://www.linkedin.com/in/ferenc-solyom/" target="_blank" rel="noopener noreferrer">Ferenc Solyom</a>
       </footer>
     </div>
   )

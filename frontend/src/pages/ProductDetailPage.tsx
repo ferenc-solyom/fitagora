@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import type { ProductDetail } from '../types'
 import { getProduct, addFavorite, removeFavorite, isFavorited, deleteProduct, ApiError } from '../api'
 import { useAuth } from '../context/AuthContext'
 
 export function ProductDetailPage() {
+  const { t } = useTranslation()
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -30,14 +32,14 @@ export function ProductDetailPage() {
           setFavorited(isFav)
         }
       } catch (e) {
-        setError(e instanceof ApiError ? e.message : 'Failed to load product')
+        setError(e instanceof ApiError ? e.message : t('productDetail.errors.loadFailed'))
       } finally {
         setLoading(false)
       }
     }
 
     fetchProduct()
-  }, [id, user])
+  }, [id, user, t])
 
   const handleToggleFavorite = async () => {
     if (!user || !id) return
@@ -52,19 +54,19 @@ export function ProductDetailPage() {
         setFavorited(true)
       }
     } catch (e) {
-      setActionError(e instanceof ApiError ? e.message : 'Failed to update favorite')
+      setActionError(e instanceof ApiError ? e.message : t('productDetail.errors.favoriteFailed'))
     }
   }
 
   const handleDelete = async () => {
-    if (!id || !confirm('Are you sure you want to delete this product?')) return
+    if (!id || !confirm(t('productDetail.confirmDelete'))) return
 
     setActionError(null)
     try {
       await deleteProduct(id)
       navigate('/')
     } catch (e) {
-      setActionError(e instanceof ApiError ? e.message : 'Failed to delete product')
+      setActionError(e instanceof ApiError ? e.message : t('productDetail.errors.deleteFailed'))
     }
   }
 
@@ -73,7 +75,7 @@ export function ProductDetailPage() {
   if (loading) {
     return (
       <div className="product-detail-page">
-        <div className="loading">Loading product...</div>
+        <div className="loading">{t('productDetail.loading')}</div>
       </div>
     )
   }
@@ -81,8 +83,8 @@ export function ProductDetailPage() {
   if (error || !product) {
     return (
       <div className="product-detail-page">
-        <div className="error">{error || 'Product not found'}</div>
-        <Link to="/" className="back-link">Back to Products</Link>
+        <div className="error">{error || t('productDetail.notFound')}</div>
+        <Link to="/" className="back-link">{t('productDetail.backToProducts')}</Link>
       </div>
     )
   }
@@ -94,7 +96,7 @@ export function ProductDetailPage() {
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M19 12H5M12 19l-7-7 7-7" />
           </svg>
-          Back to Products
+          {t('productDetail.backToProducts')}
         </Link>
       </nav>
 
@@ -128,7 +130,7 @@ export function ProductDetailPage() {
                 <circle cx="8.5" cy="8.5" r="1.5" />
                 <path d="M21 15l-5-5L5 21" />
               </svg>
-              <span>No photos available</span>
+              <span>{t('productDetail.noPhotos')}</span>
             </div>
           )}
         </div>
@@ -136,19 +138,19 @@ export function ProductDetailPage() {
         <div className="product-detail-info">
           <div className="product-detail-header">
             <h1>{product.name}</h1>
-            <span className="category-badge large">{product.categoryDisplayName}</span>
+            <span className="category-badge large">{t(`categories.${product.category}`, { defaultValue: product.categoryDisplayName })}</span>
             <p className="product-detail-price">{product.price.toFixed(2)} Lei</p>
           </div>
 
           {product.description && (
             <div className="product-detail-description">
-              <h3>Description</h3>
+              <h3>{t('productDetail.description')}</h3>
               <p>{product.description}</p>
             </div>
           )}
 
           <div className="product-detail-seller">
-            <h3>Seller Information</h3>
+            <h3>{t('productDetail.sellerInfo')}</h3>
             <div className="seller-info">
               <div className="seller-name">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -171,7 +173,7 @@ export function ProductDetailPage() {
           <div className="product-detail-actions">
             {isOwner ? (
               <button onClick={handleDelete} className="delete-btn full-width">
-                Delete Product
+                {t('productDetail.deleteProduct')}
               </button>
             ) : (
               <>
@@ -183,7 +185,7 @@ export function ProductDetailPage() {
                     <svg width="24" height="24" viewBox="0 0 24 24" fill={favorited ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
                       <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                     </svg>
-                    {favorited ? 'Remove from Favorites' : 'Add to Favorites'}
+                    {favorited ? t('productDetail.removeFromFavorites') : t('productDetail.addToFavorites')}
                   </button>
                 )}
                 {product.seller.phoneNumber && (
@@ -191,7 +193,7 @@ export function ProductDetailPage() {
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
                     </svg>
-                    Contact Seller
+                    {t('productDetail.contactSeller')}
                   </a>
                 )}
               </>
@@ -199,7 +201,7 @@ export function ProductDetailPage() {
           </div>
 
           <p className="product-detail-date">
-            Listed on {new Date(product.createdAt).toLocaleDateString()}
+            {t('productDetail.listedOn', { date: new Date(product.createdAt).toLocaleDateString() })}
           </p>
         </div>
       </div>

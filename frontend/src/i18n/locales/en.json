@@ -1,0 +1,130 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "view": "View",
+    "search": "Search",
+    "clear": "Clear",
+    "poweredBy": "Powered by"
+  },
+  "nav": {
+    "products": "Products",
+    "favorites": "Favorites",
+    "login": "Login / Register",
+    "logout": "Logout",
+    "greeting": "Hi, {{name}}"
+  },
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "email": "Email",
+    "password": "Password",
+    "passwordHint": "Password (min 8 characters)",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "phoneNumber": "Phone Number (optional)",
+    "loggingIn": "Logging in...",
+    "registering": "Registering...",
+    "unexpectedError": "An unexpected error occurred"
+  },
+  "products": {
+    "title": "Available Equipment",
+    "searchPlaceholder": "Search equipment...",
+    "allCategories": "All Categories",
+    "addProduct": "Add Equipment",
+    "noProducts": "No equipment yet. Be the first to sell!",
+    "loginToSell": "Log in to list your fitness equipment for sale.",
+    "yours": "Yours",
+    "photos": "{{count}} photos",
+    "resultsFor": "Results for \"{{query}}\"",
+    "resultsIn": "in",
+    "productsCount": "{{count}} product",
+    "productsCount_plural": "{{count}} products",
+    "pageInfo": "(page {{current}} of {{total}})",
+    "form": {
+      "namePlaceholder": "Equipment name (e.g., Dumbbell Set)",
+      "selectCategory": "Select category",
+      "pricePlaceholder": "Price (Lei)",
+      "descriptionPlaceholder": "Description (optional)",
+      "addPhotos": "Add photos ({{current}}/{{max}})",
+      "processing": "Processing...",
+      "listEquipment": "List Equipment",
+      "maxImages": "Maximum {{max}} images allowed"
+    },
+    "edit": {
+      "title": "Edit Product",
+      "name": "Name",
+      "description": "Description",
+      "category": "Category",
+      "price": "Price (Lei)",
+      "images": "Images ({{current}}/{{max}})",
+      "saveChanges": "Save Changes"
+    },
+    "actions": {
+      "edit": "Edit",
+      "remove": "Remove",
+      "view": "View"
+    },
+    "errors": {
+      "loadFailed": "Failed to load products",
+      "addFailed": "Failed to add product",
+      "updateFailed": "Failed to update product",
+      "deleteFailed": "Failed to delete product",
+      "favoriteFailed": "Failed to update favorite",
+      "pricePositive": "Price must be a positive number",
+      "selectCategory": "Please select a category"
+    }
+  },
+  "favorites": {
+    "title": "My Favorites",
+    "loading": "Loading favorites...",
+    "empty": "No favorites yet. Browse equipment and click the star to save!",
+    "viewDetails": "View Details",
+    "removeTooltip": "Remove from favorites",
+    "errors": {
+      "loadFailed": "Failed to load favorites",
+      "removeFailed": "Failed to remove favorite"
+    }
+  },
+  "productDetail": {
+    "loading": "Loading product...",
+    "notFound": "Product not found",
+    "backToProducts": "Back to Products",
+    "noPhotos": "No photos available",
+    "description": "Description",
+    "sellerInfo": "Seller Information",
+    "deleteProduct": "Delete Product",
+    "addToFavorites": "Add to Favorites",
+    "removeFromFavorites": "Remove from Favorites",
+    "contactSeller": "Contact Seller",
+    "listedOn": "Listed on {{date}}",
+    "confirmDelete": "Are you sure you want to delete this product?",
+    "errors": {
+      "loadFailed": "Failed to load product",
+      "deleteFailed": "Failed to delete product",
+      "favoriteFailed": "Failed to update favorite"
+    }
+  },
+  "pagination": {
+    "first": "First page",
+    "previous": "Previous page",
+    "next": "Next page",
+    "last": "Last page"
+  },
+  "categories": {
+    "CARDIO": "Cardio",
+    "STRENGTH": "Strength",
+    "MOBILITY": "Mobility",
+    "RECOVERY": "Recovery",
+    "HOME_GYM": "Home Gym",
+    "ACCESSORIES": "Accessories",
+    "PLYOMETRICS": "Plyometrics",
+    "CORE": "Core",
+    "OUTDOOR": "Outdoor/Functional",
+    "OTHER": "Other"
+  }
+}

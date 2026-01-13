@@ -26,18 +26,25 @@ class InMemoryProductRepository : ProductRepository {
         products.values.filter { it.ownerId == ownerId }
 
     override fun search(query: String?, category: Category?, limit: Int, offset: Int): List<Product> {
-        val lowerQuery = query?.lowercase()
-        return products.values
-            .filter { product ->
-                val matchesQuery = lowerQuery == null ||
-                    product.name.lowercase().contains(lowerQuery) ||
-                    product.description?.lowercase()?.contains(lowerQuery) == true
-                val matchesCategory = category == null || product.category == category
-                matchesQuery && matchesCategory
-            }
+        return filterProducts(query, category)
             .sortedByDescending { it.createdAt }
             .drop(offset)
             .take(limit)
+    }
+
+    override fun count(query: String?, category: Category?): Int {
+        return filterProducts(query, category).size
+    }
+
+    private fun filterProducts(query: String?, category: Category?): List<Product> {
+        val lowerQuery = query?.lowercase()
+        return products.values.filter { product ->
+            val matchesQuery = lowerQuery == null ||
+                product.name.lowercase().contains(lowerQuery) ||
+                product.description?.lowercase()?.contains(lowerQuery) == true
+            val matchesCategory = category == null || product.category == category
+            matchesQuery && matchesCategory
+        }
     }
 
     override fun deleteById(id: String): Boolean = products.remove(id) != null

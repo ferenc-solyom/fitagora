@@ -4,6 +4,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import org.acme.webshop.domain.Category
 import org.acme.webshop.domain.Favorite
 import org.acme.webshop.domain.Product
 import org.acme.webshop.repository.FavoriteRepository
@@ -36,7 +37,8 @@ class FavoriteServiceTest {
             price = BigDecimal("10.00"),
             ownerId = "seller-123",
             images = emptyList(),
-            createdAt = Instant.now()
+            createdAt = Instant.now(),
+            category = Category.OTHER,
         )
 
         every { productRepository.findById("prod-123") } returns product
@@ -72,7 +74,8 @@ class FavoriteServiceTest {
             price = BigDecimal("10.00"),
             ownerId = "seller-123",
             images = emptyList(),
-            createdAt = Instant.now()
+            createdAt = Instant.now(),
+            category = Category.OTHER,
         )
         val existingFavorite = Favorite(
             id = "fav-123",

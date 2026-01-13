@@ -1,0 +1,130 @@
+{
+  "common": {
+    "loading": "Se încarcă...",
+    "error": "Eroare",
+    "save": "Salvează",
+    "cancel": "Anulează",
+    "delete": "Șterge",
+    "edit": "Editează",
+    "view": "Vezi",
+    "search": "Caută",
+    "clear": "Șterge",
+    "poweredBy": "Realizat de"
+  },
+  "nav": {
+    "products": "Produse",
+    "favorites": "Favorite",
+    "login": "Autentificare / Înregistrare",
+    "logout": "Deconectare",
+    "greeting": "Salut, {{name}}"
+  },
+  "auth": {
+    "login": "Autentificare",
+    "register": "Înregistrare",
+    "email": "Email",
+    "password": "Parolă",
+    "passwordHint": "Parolă (minim 8 caractere)",
+    "firstName": "Prenume",
+    "lastName": "Nume",
+    "phoneNumber": "Număr de telefon (opțional)",
+    "loggingIn": "Se autentifică...",
+    "registering": "Se înregistrează...",
+    "unexpectedError": "A apărut o eroare neașteptată"
+  },
+  "products": {
+    "title": "Echipamente disponibile",
+    "searchPlaceholder": "Caută echipamente...",
+    "allCategories": "Toate categoriile",
+    "addProduct": "Adaugă echipament",
+    "noProducts": "Niciun echipament disponibil. Fii primul care vinde!",
+    "loginToSell": "Autentifică-te pentru a-ți lista echipamentul fitness de vânzare.",
+    "yours": "Al tău",
+    "photos": "{{count}} poze",
+    "resultsFor": "Rezultate pentru \"{{query}}\"",
+    "resultsIn": "în",
+    "productsCount": "{{count}} produs",
+    "productsCount_plural": "{{count}} produse",
+    "pageInfo": "(pagina {{current}} din {{total}})",
+    "form": {
+      "namePlaceholder": "Nume echipament (ex.: Set gantere)",
+      "selectCategory": "Selectează categoria",
+      "pricePlaceholder": "Preț (Lei)",
+      "descriptionPlaceholder": "Descriere (opțional)",
+      "addPhotos": "Adaugă poze ({{current}}/{{max}})",
+      "processing": "Se procesează...",
+      "listEquipment": "Publică echipament",
+      "maxImages": "Maxim {{max}} imagini permise"
+    },
+    "edit": {
+      "title": "Editează produs",
+      "name": "Nume",
+      "description": "Descriere",
+      "category": "Categorie",
+      "price": "Preț (Lei)",
+      "images": "Imagini ({{current}}/{{max}})",
+      "saveChanges": "Salvează modificările"
+    },
+    "actions": {
+      "edit": "Editează",
+      "remove": "Șterge",
+      "view": "Vezi"
+    },
+    "errors": {
+      "loadFailed": "Nu s-au putut încărca produsele",
+      "addFailed": "Nu s-a putut adăuga produsul",
+      "updateFailed": "Nu s-a putut actualiza produsul",
+      "deleteFailed": "Nu s-a putut șterge produsul",
+      "favoriteFailed": "Nu s-a putut actualiza favoritul",
+      "pricePositive": "Prețul trebuie să fie un număr pozitiv",
+      "selectCategory": "Te rog selectează o categorie"
+    }
+  },
+  "favorites": {
+    "title": "Favoritele mele",
+    "loading": "Se încarcă favoritele...",
+    "empty": "Niciun favorit încă. Răsfoiește echipamentele și apasă steaua pentru a salva!",
+    "viewDetails": "Vezi detalii",
+    "removeTooltip": "Șterge din favorite",
+    "errors": {
+      "loadFailed": "Nu s-au putut încărca favoritele",
+      "removeFailed": "Nu s-a putut șterge favoritul"
+    }
+  },
+  "productDetail": {
+    "loading": "Se încarcă produsul...",
+    "notFound": "Produs negăsit",
+    "backToProducts": "Înapoi la produse",
+    "noPhotos": "Nicio poză disponibilă",
+    "description": "Descriere",
+    "sellerInfo": "Informații vânzător",
+    "deleteProduct": "Șterge produs",
+    "addToFavorites": "Adaugă la favorite",
+    "removeFromFavorites": "Șterge din favorite",
+    "contactSeller": "Contactează vânzătorul",
+    "listedOn": "Publicat pe {{date}}",
+    "confirmDelete": "Ești sigur că vrei să ștergi acest produs?",
+    "errors": {
+      "loadFailed": "Nu s-a putut încărca produsul",
+      "deleteFailed": "Nu s-a putut șterge produsul",
+      "favoriteFailed": "Nu s-a putut actualiza favoritul"
+    }
+  },
+  "pagination": {
+    "first": "Prima pagină",
+    "previous": "Pagina anterioară",
+    "next": "Pagina următoare",
+    "last": "Ultima pagină"
+  },
+  "categories": {
+    "CARDIO": "Cardio",
+    "STRENGTH": "Forță",
+    "MOBILITY": "Mobilitate",
+    "RECOVERY": "Recuperare",
+    "HOME_GYM": "Sală acasă",
+    "ACCESSORIES": "Accesorii",
+    "PLYOMETRICS": "Pliometrie",
+    "CORE": "Abdomen",
+    "OUTDOOR": "Exterior/Funcțional",
+    "OTHER": "Altele"
+  }
+}

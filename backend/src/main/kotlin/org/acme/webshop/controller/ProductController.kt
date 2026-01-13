@@ -22,6 +22,7 @@ import org.acme.webshop.controller.ResponseUtils.unauthorized
 import org.acme.webshop.domain.Category
 import org.acme.webshop.domain.Product
 import org.acme.webshop.dto.CreateProductRequest
+import org.acme.webshop.dto.PaginatedResponse
 import org.acme.webshop.dto.SellerInfo
 import org.acme.webshop.dto.UpdateProductRequest
 import org.acme.webshop.dto.toDetailResponse
@@ -106,6 +107,10 @@ class ProductController(
         }
     }
 
+    companion object {
+        const val DEFAULT_PAGE_SIZE = 12
+    }
+
     @GET
     @PermitAll
     fun getAllProducts(
@@ -113,16 +118,25 @@ class ProductController(
         @QueryParam("category") categoryParam: String?,
         @QueryParam("limit") limit: Int?,
         @QueryParam("offset") offset: Int?
-    ): List<Product> {
+    ): PaginatedResponse<Product> {
         val category = categoryParam?.let { Category.fromString(it) }
-        if (query.isNullOrBlank() && category == null) {
-            return productService.findAll()
-        }
-        return productService.search(
-            query = query?.takeIf { it.isNotBlank() },
+        val searchQuery = query?.takeIf { it.isNotBlank() }
+        val actualLimit = limit ?: DEFAULT_PAGE_SIZE
+        val actualOffset = offset ?: 0
+
+        val items = productService.search(
+            query = searchQuery,
             category = category,
-            limit = limit ?: 20,
-            offset = offset ?: 0
+            limit = actualLimit,
+            offset = actualOffset
+        )
+        val total = productService.count(searchQuery, category)
+
+        return PaginatedResponse(
+            items = items,
+            total = total,
+            limit = actualLimit,
+            offset = actualOffset
         )
     }
 
