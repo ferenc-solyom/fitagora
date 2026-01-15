@@ -567,7 +567,9 @@ tr:hover td {
   .nav-btn {
     padding: 8px 16px;
     font-size: 0.85rem;
-    width: auto;
+    min-width: 200px;
+    text-align: center;
+    white-space: nowrap;
   }
 
   .nav-links {
@@ -581,7 +583,8 @@ tr:hover td {
   .nav-link {
     padding: 6px 12px;
     font-size: 0.85rem;
-    min-width: unset;
+    min-width: 80px;
+    text-align: center;
   }
 
   /* Hero mobile */
@@ -758,10 +761,16 @@ tr:hover td {
     width: auto;
   }
 
-  .search-form .search-btn,
-  .search-form .clear-search-btn {
-    width: auto;
+  .search-form .search-btn {
+    min-width: 80px;
     flex: none;
+    text-align: center;
+  }
+
+  .search-form .clear-search-btn {
+    min-width: 70px;
+    flex: none;
+    text-align: center;
   }
 }
 
