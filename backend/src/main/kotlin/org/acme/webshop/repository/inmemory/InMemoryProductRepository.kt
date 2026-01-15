@@ -8,7 +8,7 @@ import org.acme.webshop.repository.ProductRepository
 import java.util.concurrent.ConcurrentHashMap
 
 @ApplicationScoped
-@UnlessBuildProfile("lambda")
+@UnlessBuildProfile(anyOf = ["lambda", "ecs"])
 class InMemoryProductRepository : ProductRepository {
 
     private val products = ConcurrentHashMap<String, Product>()

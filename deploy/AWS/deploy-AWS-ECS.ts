@@ -1,29 +1,24 @@
-// To use:
+// Deploy Quarkus app to AWS ECS with Fargate and DynamoDB
 //
-//     # Install dependencies
-// npm install
-//
-// # Set environment variables
-// export AWS_REGION=us-east-1
-// export AWS_ACCOUNT_ID=123456789012
-// export SUBNET_IDS=subnet-xxx,subnet-yyy
-// export SECURITY_GROUP_IDS=sg-xxx
-//
-// # Deploy
-// npm run deploy
+// .env (optional):
+//   AWS_REGION=us-east-1
+//   SUBNET_IDS=subnet-xxx,subnet-yyy
+//   SECURITY_GROUP_IDS=sg-xxx
 //
 // What the script does:
-//     1. Creates ECR repository (if needed)
-//   2. Builds the Quarkus app and Docker image
-// 3. Pushes image to ECR
-// 4. Creates ECS cluster with Fargate
-//   5. Registers task definition and creates/updates the service
+//   1. Creates ECS task role with DynamoDB permissions
+//   2. Creates DynamoDB tables (webshop-products, webshop-favorites, webshop-users)
+//   3. Creates ECR repository (if needed)
+//   4. Builds the Quarkus app and Docker image
+//   5. Pushes image to ECR
+//   6. Creates ECS cluster with Fargate
+//   7. Registers task definition and creates/updates the service
 //
 // Prerequisites:
-//     - AWS credentials configured (aws configure)
-// - Docker running
-// - ecsTaskExecutionRole IAM role exists in your account
-// - VPC subnets and security group allowing port 8080
+//   - AWS credentials configured (aws configure)
+//   - Docker running
+//   - ecsTaskExecutionRole IAM role exists in your account
+//   - VPC subnets and security group allowing port 8080
 
 
 import "dotenv/config";
@@ -53,6 +48,14 @@ import {
   EC2Client,
   DescribeSubnetsCommand,
 } from "@aws-sdk/client-ec2";
+import {
+  IAMClient,
+  CreateRoleCommand,
+  GetRoleCommand,
+} from "@aws-sdk/client-iam";
+import { STSClient, GetCallerIdentityCommand } from "@aws-sdk/client-sts";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { ensureDynamoDbPolicy, ensureDynamoDbTables } from "./dynamodb.js";
 import { execSync } from "child_process";
 import * as path from "path";
 import * as fs from "fs";
@@ -72,6 +75,49 @@ const ecr = new ECRClient({ region: REGION });
 const ecs = new ECSClient({ region: REGION });
 const elbv2 = new ElasticLoadBalancingV2Client({ region: REGION });
 const ec2 = new EC2Client({ region: REGION });
+const iam = new IAMClient({ region: REGION });
+const sts = new STSClient({ region: REGION });
+const dynamodb = new DynamoDBClient({ region: REGION });
+
+const TASK_ROLE_NAME = `${APP_NAME}-task-role`;
+
+const ASSUME_ROLE_POLICY = JSON.stringify({
+  Version: "2012-10-17",
+  Statement: [
+    {
+      Effect: "Allow",
+      Principal: { Service: "ecs-tasks.amazonaws.com" },
+      Action: "sts:AssumeRole",
+    },
+  ],
+});
+
+async function getAccountId(): Promise<string> {
+  const ident = await sts.send(new GetCallerIdentityCommand({}));
+  if (!ident.Account) throw new Error("Could not resolve AWS account id from STS");
+  return ident.Account;
+}
+
+async function getOrCreateTaskRole(accountId: string): Promise<string> {
+  const roleArn = `arn:aws:iam::${accountId}:role/${TASK_ROLE_NAME}`;
+
+  try {
+    await iam.send(new GetRoleCommand({ RoleName: TASK_ROLE_NAME }));
+    console.log("Using existing ECS task role");
+  } catch {
+    await iam.send(
+      new CreateRoleCommand({
+        RoleName: TASK_ROLE_NAME,
+        AssumeRolePolicyDocument: ASSUME_ROLE_POLICY,
+      })
+    );
+    console.log("Created ECS task role, waiting for propagation...");
+    await new Promise((resolve) => setTimeout(resolve, 10000));
+  }
+
+  await ensureDynamoDbPolicy(iam, TASK_ROLE_NAME, REGION, accountId);
+  return roleArn;
+}
 
 async function getOrCreateRepository(): Promise<string> {
   try {
@@ -210,7 +256,7 @@ async function getOrCreateTargetGroup(): Promise<string> {
       VpcId: vpcId,
       TargetType: "ip",
       HealthCheckEnabled: true,
-      HealthCheckPath: "/hello",
+      HealthCheckPath: "/q/health/live",
       HealthCheckProtocol: "HTTP",
       HealthCheckIntervalSeconds: 30,
       HealthCheckTimeoutSeconds: 5,
@@ -244,7 +290,7 @@ async function createListenerIfNeeded(albArn: string, targetGroupArn: string): P
   }
 }
 
-async function registerTaskDefinition(imageUri: string): Promise<string> {
+async function registerTaskDefinition(imageUri: string, taskRoleArn: string, accountId: string): Promise<string> {
   const result = await ecs.send(
     new RegisterTaskDefinitionCommand({
       family: APP_NAME,
@@ -252,7 +298,8 @@ async function registerTaskDefinition(imageUri: string): Promise<string> {
       requiresCompatibilities: ["FARGATE"],
       cpu: "512",
       memory: "1024",
-      executionRoleArn: `arn:aws:iam::${process.env.AWS_ACCOUNT_ID}:role/ecsTaskExecutionRole`,
+      executionRoleArn: `arn:aws:iam::${accountId}:role/ecsTaskExecutionRole`,
+      taskRoleArn: taskRoleArn,
       containerDefinitions: [
         {
           name: APP_NAME,
@@ -261,6 +308,7 @@ async function registerTaskDefinition(imageUri: string): Promise<string> {
           essential: true,
           environment: [
             { name: "QUARKUS_PROFILE", value: "ecs" },
+            { name: "AWS_REGION", value: REGION },
           ],
           logConfiguration: {
             logDriver: "awslogs",
@@ -296,6 +344,7 @@ async function createOrUpdateService(taskDefinitionArn: string, targetGroupArn: 
           cluster: CLUSTER_NAME,
           service: SERVICE_NAME,
           taskDefinition: taskDefinitionArn,
+          desiredCount: 1,
           forceNewDeployment: true,
         })
       );
@@ -333,6 +382,12 @@ async function createOrUpdateService(taskDefinitionArn: string, targetGroupArn: 
 async function deploy() {
   console.log("Starting deployment to AWS ECS...\n");
 
+  const accountId = await getAccountId();
+  console.log(`Account: ${accountId}  Region: ${REGION}`);
+
+  const taskRoleArn = await getOrCreateTaskRole(accountId);
+  await ensureDynamoDbTables(dynamodb);
+
   const repositoryUri = await getOrCreateRepository();
   await loginToEcr();
   const imageUri = buildAndPushImage(repositoryUri);
@@ -343,7 +398,7 @@ async function deploy() {
   const targetGroupArn = await getOrCreateTargetGroup();
   await createListenerIfNeeded(albArn, targetGroupArn);
 
-  const taskDefinitionArn = await registerTaskDefinition(imageUri);
+  const taskDefinitionArn = await registerTaskDefinition(imageUri, taskRoleArn, accountId);
   await createOrUpdateService(taskDefinitionArn, targetGroupArn);
 
   console.log("\n========================================");

@@ -7,7 +7,7 @@ import org.acme.webshop.repository.FavoriteRepository
 import java.util.concurrent.ConcurrentHashMap
 
 @ApplicationScoped
-@UnlessBuildProfile("lambda")
+@UnlessBuildProfile(anyOf = ["lambda", "ecs"])
 class InMemoryFavoriteRepository : FavoriteRepository {
 
     private val favorites = ConcurrentHashMap<String, Favorite>()

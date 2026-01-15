@@ -13,7 +13,7 @@ import software.amazon.awssdk.services.dynamodb.model.QueryRequest
 import java.time.Instant
 
 @ApplicationScoped
-@IfBuildProfile("lambda")
+@IfBuildProfile(anyOf = ["lambda", "ecs"])
 class DynamoDbUserRepository(
     private val dynamoDb: DynamoDbClient
 ) : UserRepository {

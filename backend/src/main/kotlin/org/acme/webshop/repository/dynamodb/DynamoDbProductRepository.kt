@@ -16,7 +16,7 @@ import java.math.BigDecimal
 import java.time.Instant
 
 @ApplicationScoped
-@IfBuildProfile("lambda")
+@IfBuildProfile(anyOf = ["lambda", "ecs"])
 class DynamoDbProductRepository(
     private val dynamoDb: DynamoDbClient
 ) : ProductRepository {

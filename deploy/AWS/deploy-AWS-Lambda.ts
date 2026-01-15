@@ -19,8 +19,6 @@ import {
     CreateRoleCommand,
     AttachRolePolicyCommand,
     GetRoleCommand,
-    PutRolePolicyCommand,
-    GetRolePolicyCommand,
 } from "@aws-sdk/client-iam";
 import {
     ApiGatewayV2Client,
@@ -36,13 +34,8 @@ import {
     GetStagesCommand,
 } from "@aws-sdk/client-apigatewayv2";
 import { STSClient, GetCallerIdentityCommand } from "@aws-sdk/client-sts";
-import {
-    DynamoDBClient,
-    CreateTableCommand,
-    DescribeTableCommand,
-    UpdateTableCommand,
-    ResourceNotFoundException,
-} from "@aws-sdk/client-dynamodb";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { ensureDynamoDbPolicy, ensureDynamoDbTables } from "./dynamodb.js";
 import { execSync } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
@@ -62,10 +55,6 @@ const iam = new IAMClient({ region: REGION });
 const apigw = new ApiGatewayV2Client({ region: REGION });
 const sts = new STSClient({ region: REGION });
 const dynamodb = new DynamoDBClient({ region: REGION });
-
-const PRODUCTS_TABLE = "webshop-products";
-const FAVORITES_TABLE = "webshop-favorites";
-const USERS_TABLE = "webshop-users";
 
 const ASSUME_ROLE_POLICY = JSON.stringify({
     Version: "2012-10-17",
@@ -109,145 +98,8 @@ async function getOrCreateRole(accountId: string): Promise<string> {
         await new Promise((resolve) => setTimeout(resolve, 10000));
     }
 
-    await ensureDynamoDbPolicy(accountId);
+    await ensureDynamoDbPolicy(iam, ROLE_NAME, REGION, accountId);
     return roleArn;
-}
-
-async function ensureDynamoDbPolicy(accountId: string): Promise<void> {
-    const policyName = "DynamoDBAccess";
-    const policyDocument = JSON.stringify({
-        Version: "2012-10-17",
-        Statement: [
-            {
-                Effect: "Allow",
-                Action: [
-                    "dynamodb:PutItem",
-                    "dynamodb:GetItem",
-                    "dynamodb:DeleteItem",
-                    "dynamodb:Scan",
-                    "dynamodb:Query",
-                ],
-                Resource: [
-                    `arn:aws:dynamodb:${REGION}:${accountId}:table/${PRODUCTS_TABLE}`,
-                    `arn:aws:dynamodb:${REGION}:${accountId}:table/${PRODUCTS_TABLE}/index/*`,
-                    `arn:aws:dynamodb:${REGION}:${accountId}:table/${FAVORITES_TABLE}`,
-                    `arn:aws:dynamodb:${REGION}:${accountId}:table/${FAVORITES_TABLE}/index/*`,
-                    `arn:aws:dynamodb:${REGION}:${accountId}:table/${USERS_TABLE}`,
-                    `arn:aws:dynamodb:${REGION}:${accountId}:table/${USERS_TABLE}/index/*`,
-                ],
-            },
-        ],
-    });
-
-    // Always update the policy to ensure it has the latest resources
-    await iam.send(
-        new PutRolePolicyCommand({
-            RoleName: ROLE_NAME,
-            PolicyName: policyName,
-            PolicyDocument: policyDocument,
-        })
-    );
-    console.log("Updated DynamoDB IAM policy");
-}
-
-interface GsiConfig {
-    attribute: string;
-    name: string;
-}
-
-interface TableConfig {
-    tableName: string;
-    gsis?: GsiConfig[];
-}
-
-async function ensureDynamoDbTable(config: TableConfig): Promise<void> {
-    const { tableName, gsis = [] } = config;
-
-    try {
-        const describeResult = await dynamodb.send(new DescribeTableCommand({ TableName: tableName }));
-        console.log(`DynamoDB table exists: ${tableName}`);
-
-        const existingGsis = describeResult.Table?.GlobalSecondaryIndexes || [];
-        for (const gsi of gsis) {
-            const gsiExists = existingGsis.some(g => g.IndexName === gsi.name);
-
-            if (!gsiExists) {
-                console.log(`Adding GSI ${gsi.name} to ${tableName}...`);
-                await dynamodb.send(
-                    new UpdateTableCommand({
-                        TableName: tableName,
-                        AttributeDefinitions: [{ AttributeName: gsi.attribute, AttributeType: "S" }],
-                        GlobalSecondaryIndexUpdates: [
-                            {
-                                Create: {
-                                    IndexName: gsi.name,
-                                    KeySchema: [{ AttributeName: gsi.attribute, KeyType: "HASH" }],
-                                    Projection: { ProjectionType: "ALL" },
-                                },
-                            },
-                        ],
-                    })
-                );
-                console.log(`Added GSI ${gsi.name} to ${tableName} (may take a minute to become active)`);
-                // Wait for GSI to be created before adding next one
-                await new Promise((resolve) => setTimeout(resolve, 5000));
-            } else {
-                console.log(`GSI ${gsi.name} already exists on ${tableName}`);
-            }
-        }
-    } catch (e) {
-        if (e instanceof ResourceNotFoundException) {
-            const attributeDefinitions: { AttributeName: string; AttributeType: string }[] = [
-                { AttributeName: "id", AttributeType: "S" }
-            ];
-            const globalSecondaryIndexes: {
-                IndexName: string;
-                KeySchema: { AttributeName: string; KeyType: string }[];
-                Projection: { ProjectionType: string };
-            }[] = [];
-
-            for (const gsi of gsis) {
-                attributeDefinitions.push({ AttributeName: gsi.attribute, AttributeType: "S" });
-                globalSecondaryIndexes.push({
-                    IndexName: gsi.name,
-                    KeySchema: [{ AttributeName: gsi.attribute, KeyType: "HASH" }],
-                    Projection: { ProjectionType: "ALL" },
-                });
-            }
-
-            await dynamodb.send(
-                new CreateTableCommand({
-                    TableName: tableName,
-                    KeySchema: [{ AttributeName: "id", KeyType: "HASH" }],
-                    AttributeDefinitions: attributeDefinitions,
-                    BillingMode: "PAY_PER_REQUEST",
-                    GlobalSecondaryIndexes: globalSecondaryIndexes.length > 0 ? globalSecondaryIndexes : undefined,
-                })
-            );
-            const gsiNames = gsis.map(g => g.name).join(", ");
-            console.log(`Created DynamoDB table: ${tableName}${gsiNames ? ` with GSIs: ${gsiNames}` : ""}`);
-        } else {
-            throw e;
-        }
-    }
-}
-
-async function ensureDynamoDbTables(): Promise<void> {
-    await ensureDynamoDbTable({
-        tableName: PRODUCTS_TABLE,
-        gsis: [{ attribute: "ownerId", name: "owner-index" }],
-    });
-    await ensureDynamoDbTable({
-        tableName: FAVORITES_TABLE,
-        gsis: [
-            { attribute: "userId", name: "user-index" },
-            { attribute: "productId", name: "product-index" },
-        ],
-    });
-    await ensureDynamoDbTable({
-        tableName: USERS_TABLE,
-        gsis: [{ attribute: "email", name: "email-index" }],
-    });
 }
 
 function ensureJwtKeys(): void {
@@ -463,7 +315,7 @@ async function deploy() {
     console.log(`Account: ${accountId}  Region: ${REGION}`);
 
     const roleArn = await getOrCreateRole(accountId);
-    await ensureDynamoDbTables();
+    await ensureDynamoDbTables(dynamodb);
     const zipBuffer = buildApplication();
     await deployFunction(roleArn, zipBuffer);
 

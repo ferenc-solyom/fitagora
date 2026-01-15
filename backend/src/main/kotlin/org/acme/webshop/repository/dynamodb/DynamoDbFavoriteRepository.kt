@@ -9,7 +9,7 @@ import software.amazon.awssdk.services.dynamodb.model.*
 import java.time.Instant
 
 @ApplicationScoped
-@IfBuildProfile("lambda")
+@IfBuildProfile(anyOf = ["lambda", "ecs"])
 class DynamoDbFavoriteRepository(
     private val dynamoDb: DynamoDbClient
 ) : FavoriteRepository {
