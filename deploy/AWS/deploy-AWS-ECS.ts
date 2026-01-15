@@ -65,7 +65,7 @@ const APP_NAME = "code-with-quarkus";
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(SCRIPT_DIR, "../..");
 const BACKEND_DIR = path.resolve(PROJECT_ROOT, "backend");
-const REGION = process.env.AWS_REGION || "us-east-1";
+const REGION = process.env.AWS_REGION || "eu-central-1";
 const CLUSTER_NAME = `${APP_NAME}-cluster`;
 const SERVICE_NAME = `${APP_NAME}-service`;
 const ALB_NAME = `${APP_NAME}-alb`;
@@ -167,7 +167,7 @@ function buildAndPushImage(repositoryUri: string): string {
 
   console.log("Building application...");
   ensureJwtKeys();
-  execSync(`"${gradlew}" :backend:quarkusBuild`, { stdio: "inherit", cwd: PROJECT_ROOT });
+  execSync(`"${gradlew}" :backend:quarkusBuild -Dquarkus.profile=ecs`, { stdio: "inherit", cwd: PROJECT_ROOT });
 
   console.log("Building Docker image...");
   execSync(`docker build -f src/main/docker/Dockerfile.jvm -t ${imageTag} .`, {
