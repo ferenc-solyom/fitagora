@@ -19,6 +19,7 @@
     "greeting": "Hi, {{name}}"
   },
   "auth": {
+    "back": "Back",
     "login": "Login",
     "register": "Register",
     "email": "Email",

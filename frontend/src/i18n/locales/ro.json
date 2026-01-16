@@ -19,6 +19,7 @@
     "greeting": "Salut, {{name}}"
   },
   "auth": {
+    "back": "Înapoi",
     "login": "Autentificare",
     "register": "Înregistrare",
     "email": "Email",

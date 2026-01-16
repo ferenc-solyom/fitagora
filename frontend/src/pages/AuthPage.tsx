@@ -1,9 +1,11 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { AuthForms } from '../components/AuthForms'
 import { useAuth } from '../context/AuthContext'
 
 export function AuthPage() {
+  const { t } = useTranslation()
   const { user, loading } = useAuth()
   const navigate = useNavigate()
 
@@ -23,6 +25,9 @@ export function AuthPage() {
 
   return (
     <div className="auth-page">
+      <button className="auth-back-btn" onClick={() => navigate('/')}>
+        ← {t('auth.back')}
+      </button>
       <div className="auth-page-container">
         <div className="auth-page-header">
           <img src="/logo.svg" alt="FitAgora" className="auth-page-logo" />
