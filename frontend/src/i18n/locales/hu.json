@@ -30,7 +30,8 @@
     "phoneNumber": "Telefonszám (opcionális)",
     "loggingIn": "Bejelentkezés...",
     "registering": "Regisztráció...",
-    "unexpectedError": "Váratlan hiba történt"
+    "unexpectedError": "Váratlan hiba történt",
+    "invalidPhone": "Ervenytelen telefonszam. Formatum: +40 123 456 789 vagy 0712345678"
   },
   "products": {
     "title": "Elérhető felszerelések",
@@ -89,6 +90,29 @@
     "errors": {
       "loadFailed": "Nem sikerült betölteni a kedvenceket",
       "removeFailed": "Nem sikerült eltávolítani a kedvencet"
+    }
+  },
+  "profile": {
+    "title": "Profilom",
+    "subtitle": "Fiokbeallitasok kezelese",
+    "name": "Nev",
+    "email": "Email",
+    "phoneNumber": "Telefonszam",
+    "phoneNumberPlaceholder": "Add meg a telefonszamod",
+    "savePhone": "Telefonszam mentese",
+    "saving": "Mentes...",
+    "updateSuccess": "Profil sikeresen frissitve",
+    "dangerZone": "Veszelyes zona",
+    "deleteWarning": "A fiok torlese veglegesen eltavolit minden adatod, beleertve a termekeidet es a kedvenceidet.",
+    "deleteAccount": "Fiok torlese",
+    "confirmDeleteTitle": "Fiok torlese?",
+    "confirmDeleteMessage": "Biztosan torolni szeretned a fiokod? Ez a muvelet nem vonhato vissza. Minden termeked torolve lesz.",
+    "confirmDelete": "Igen, torold a fiokomat",
+    "deleting": "Torles...",
+    "errors": {
+      "updateFailed": "Nem sikerult frissiteni a profilt",
+      "deleteFailed": "Nem sikerult torolni a fiokot",
+      "invalidPhone": "Ervenytelen telefonszam. Formatum: +40 123 456 789 vagy 0712345678"
     }
   },
   "productDetail": {

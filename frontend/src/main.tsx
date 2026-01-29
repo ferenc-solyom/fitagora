@@ -5,6 +5,7 @@ import './i18n'
 import App from './App'
 import { AuthPage } from './pages/AuthPage'
 import { ProductDetailPage } from './pages/ProductDetailPage'
+import { ProfilePage } from './pages/ProfilePage'
 import { AuthProvider } from './context/AuthContext'
 import './App.css'
 
@@ -15,6 +16,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <Routes>
           <Route path="/" element={<App />} />
           <Route path="/auth" element={<AuthPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
           <Route path="/products/:id" element={<ProductDetailPage />} />
         </Routes>
       </AuthProvider>

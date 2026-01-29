@@ -10,7 +10,8 @@ import type {
   AuthResponse,
   User,
   Category,
-  PaginatedResponse
+  PaginatedResponse,
+  UpdateUserRequest
 } from './types'
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080').replace(/\/+$/, '')
@@ -83,6 +84,23 @@ export async function getMe(): Promise<User> {
     headers: getAuthHeaders()
   })
   return handleResponse<User>(response)
+}
+
+export async function updateProfile(request: UpdateUserRequest): Promise<User> {
+  const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(request)
+  })
+  return handleResponse<User>(response)
+}
+
+export async function deleteAccount(): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
+    method: 'DELETE',
+    headers: getAuthHeaders()
+  })
+  return handleResponse<void>(response)
 }
 
 // Products API

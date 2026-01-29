@@ -930,6 +930,121 @@ tr:hover td {
   cursor: not-allowed;
 }
 
+/* Profile Page */
+.profile-success {
+  color: #86efac;
+  padding: 12px 16px;
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: var(--radius-sm);
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+}
+
+.profile-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 20px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.profile-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.profile-field label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.profile-field span {
+  font-size: 1rem;
+  color: var(--color-text);
+}
+
+.profile-form {
+  padding-bottom: 20px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.profile-danger-zone {
+  padding-top: 8px;
+}
+
+.profile-danger-zone h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-danger);
+  margin-bottom: 8px;
+}
+
+.profile-danger-zone p {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.delete-account-btn {
+  width: 100%;
+  padding: 12px 16px;
+  background: transparent;
+  border: 2px solid var(--color-danger);
+  color: var(--color-danger);
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.delete-account-btn:hover {
+  background: var(--color-danger);
+  color: white;
+}
+
+.delete-confirm-text {
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.delete-confirm-btn {
+  background: var(--color-danger);
+  border: none;
+  color: white;
+}
+
+.delete-confirm-btn:hover {
+  background: #dc2626;
+}
+
+.delete-confirm-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.nav-user-link {
+  color: var(--color-text-muted);
+  text-decoration: none;
+  font-size: 0.95rem;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s;
+}
+
+.nav-user-link:hover {
+  color: var(--color-accent);
+  background: var(--color-surface-hover);
+}
+
 /* Search Form */
 .search-form {
   display: flex;

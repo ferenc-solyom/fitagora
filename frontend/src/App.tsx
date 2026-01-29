@@ -67,7 +67,7 @@ function App() {
           </div>
           {user ? (
             <>
-              <span className="nav-user">{t('nav.greeting', { name: user.firstName })}</span>
+              <Link to="/profile" className="nav-user-link">{t('nav.greeting', { name: user.firstName })}</Link>
               <button onClick={logout} className="nav-btn nav-btn-outline">{t('nav.logout')}</button>
             </>
           ) : (

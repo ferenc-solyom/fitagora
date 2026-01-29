@@ -6,6 +6,7 @@ import jakarta.ws.rs.Consumes
 import jakarta.ws.rs.DELETE
 import jakarta.ws.rs.GET
 import jakarta.ws.rs.POST
+import jakarta.ws.rs.PUT
 import jakarta.ws.rs.Path
 import jakarta.ws.rs.Produces
 import jakarta.ws.rs.core.Context
@@ -20,10 +21,12 @@ import org.acme.webshop.domain.User
 import org.acme.webshop.dto.AuthResponse
 import org.acme.webshop.dto.LoginRequest
 import org.acme.webshop.dto.RegisterRequest
+import org.acme.webshop.dto.UpdateUserRequest
 import org.acme.webshop.dto.UserResponse
 import org.acme.webshop.service.AuthResult
 import org.acme.webshop.service.AuthService
 import org.acme.webshop.service.DeleteUserResult
+import org.acme.webshop.service.UpdateUserResult
 
 @Path("/api/auth")
 @Produces(MediaType.APPLICATION_JSON)
@@ -90,6 +93,28 @@ class AuthController(
         return Response.ok(user.toResponse()).build()
     }
 
+    @PUT
+    @Path("/me")
+    @RolesAllowed("user")
+    fun updateCurrentUser(
+        @Context securityContext: SecurityContext,
+        request: UpdateUserRequest
+    ): Response {
+        val userId = securityContext.userPrincipal?.name
+            ?: return unauthorized("not authenticated")
+
+        return when (val result = authService.updateUser(
+            userId = userId,
+            firstName = request.firstName,
+            lastName = request.lastName,
+            phoneNumber = request.phoneNumber
+        )) {
+            is UpdateUserResult.Success -> Response.ok(result.user.toResponse()).build()
+            is UpdateUserResult.NotFound -> notFound("user not found")
+            is UpdateUserResult.ValidationError -> badRequest(result.message)
+        }
+    }
+
     @DELETE
     @Path("/me")
     @RolesAllowed("user")
@@ -110,12 +135,20 @@ class AuthController(
         if (request.password.length < 8) return "password must be at least 8 characters"
         if (request.firstName.isNullOrBlank()) return "firstName is required"
         if (request.lastName.isNullOrBlank()) return "lastName is required"
+        val phone = request.phoneNumber?.trim()?.takeIf { it.isNotBlank() }
+        if (phone != null && !isValidPhoneNumber(phone)) return "invalid phone number format"
         return null
     }
 
     private fun isValidEmail(email: String): Boolean {
         val emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$".toRegex()
         return emailRegex.matches(email)
+    }
+
+    private fun isValidPhoneNumber(phone: String): Boolean {
+        val normalized = phone.replace(Regex("[\\s\\-]"), "")
+        val phoneRegex = Regex("^\\+?[0-9]{7,15}$")
+        return phoneRegex.matches(normalized)
     }
 
     private fun User.toResponse(): UserResponse = UserResponse(

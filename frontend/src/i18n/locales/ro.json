@@ -30,7 +30,8 @@
     "phoneNumber": "Număr de telefon (opțional)",
     "loggingIn": "Se autentifică...",
     "registering": "Se înregistrează...",
-    "unexpectedError": "A apărut o eroare neașteptată"
+    "unexpectedError": "A apărut o eroare neașteptată",
+    "invalidPhone": "Numar de telefon invalid. Format: +40 123 456 789 sau 0712345678"
   },
   "products": {
     "title": "Echipamente disponibile",
@@ -89,6 +90,29 @@
     "errors": {
       "loadFailed": "Nu s-au putut încărca favoritele",
       "removeFailed": "Nu s-a putut șterge favoritul"
+    }
+  },
+  "profile": {
+    "title": "Profilul meu",
+    "subtitle": "Gestioneaza setarile contului tau",
+    "name": "Nume",
+    "email": "Email",
+    "phoneNumber": "Numar de telefon",
+    "phoneNumberPlaceholder": "Introdu numarul de telefon",
+    "savePhone": "Salveaza numarul de telefon",
+    "saving": "Se salveaza...",
+    "updateSuccess": "Profilul a fost actualizat cu succes",
+    "dangerZone": "Zona periculoasa",
+    "deleteWarning": "Stergerea contului va elimina permanent toate datele tale, inclusiv produsele si favoritele.",
+    "deleteAccount": "Sterge contul",
+    "confirmDeleteTitle": "Stergi contul?",
+    "confirmDeleteMessage": "Esti sigur ca vrei sa stergi contul? Aceasta actiune nu poate fi anulata. Toate produsele tale vor fi sterse.",
+    "confirmDelete": "Da, sterge contul meu",
+    "deleting": "Se sterge...",
+    "errors": {
+      "updateFailed": "Nu s-a putut actualiza profilul",
+      "deleteFailed": "Nu s-a putut sterge contul",
+      "invalidPhone": "Numar de telefon invalid. Format: +40 123 456 789 sau 0712345678"
     }
   },
   "productDetail": {

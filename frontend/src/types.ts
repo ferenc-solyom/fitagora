@@ -92,3 +92,9 @@ export interface AuthResponse {
   token: string
   user: User
 }
+
+export interface UpdateUserRequest {
+  firstName?: string
+  lastName?: string
+  phoneNumber?: string | null
+}

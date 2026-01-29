@@ -4,6 +4,12 @@ import { login as apiLogin, register as apiRegister, ApiError } from '../api'
 import { useAuth } from '../context/AuthContext'
 import type { LoginRequest, RegisterRequest } from '../types'
 
+function isValidPhoneNumber(phone: string): boolean {
+  if (!phone.trim()) return true
+  const normalized = phone.replace(/[\s\-]/g, '')
+  return /^\+?[0-9]{7,15}$/.test(normalized)
+}
+
 type AuthMode = 'login' | 'register'
 
 export function AuthForms() {
@@ -48,6 +54,12 @@ export function AuthForms() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+
+    if (registerForm.phoneNumber && !isValidPhoneNumber(registerForm.phoneNumber)) {
+      setError(t('auth.invalidPhone'))
+      return
+    }
+
     setLoading(true)
 
     try {

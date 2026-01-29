@@ -19,6 +19,12 @@ sealed class DeleteUserResult {
     object NotFound : DeleteUserResult()
 }
 
+sealed class UpdateUserResult {
+    data class Success(val user: User) : UpdateUserResult()
+    object NotFound : UpdateUserResult()
+    data class ValidationError(val message: String) : UpdateUserResult()
+}
+
 @ApplicationScoped
 class AuthService(
     private val userRepository: UserRepository,
@@ -89,5 +95,35 @@ class AuthService(
 
         userRepository.deleteById(userId)
         return DeleteUserResult.Success
+    }
+
+    fun updateUser(
+        userId: String,
+        firstName: String?,
+        lastName: String?,
+        phoneNumber: String?
+    ): UpdateUserResult {
+        val user = userRepository.findById(userId)
+            ?: return UpdateUserResult.NotFound
+
+        val normalizedPhone = phoneNumber?.trim()?.takeIf { it.isNotBlank() }
+        if (normalizedPhone != null && !isValidPhoneNumber(normalizedPhone)) {
+            return UpdateUserResult.ValidationError("invalid phone number format")
+        }
+
+        val updatedUser = user.copy(
+            firstName = firstName?.trim()?.takeIf { it.isNotBlank() } ?: user.firstName,
+            lastName = lastName?.trim()?.takeIf { it.isNotBlank() } ?: user.lastName,
+            phoneNumber = normalizedPhone
+        )
+
+        val savedUser = userRepository.save(updatedUser)
+        return UpdateUserResult.Success(savedUser)
+    }
+
+    private fun isValidPhoneNumber(phone: String): Boolean {
+        val normalized = phone.replace(Regex("[\\s\\-]"), "")
+        val phoneRegex = Regex("^\\+?[0-9]{7,15}$")
+        return phoneRegex.matches(normalized)
     }
 }

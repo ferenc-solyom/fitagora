@@ -30,7 +30,8 @@
     "phoneNumber": "Phone Number (optional)",
     "loggingIn": "Logging in...",
     "registering": "Registering...",
-    "unexpectedError": "An unexpected error occurred"
+    "unexpectedError": "An unexpected error occurred",
+    "invalidPhone": "Invalid phone number. Use format: +40 123 456 789 or 0712345678"
   },
   "products": {
     "title": "Available Equipment",
@@ -89,6 +90,29 @@
     "errors": {
       "loadFailed": "Failed to load favorites",
       "removeFailed": "Failed to remove favorite"
+    }
+  },
+  "profile": {
+    "title": "My Profile",
+    "subtitle": "Manage your account settings",
+    "name": "Name",
+    "email": "Email",
+    "phoneNumber": "Phone Number",
+    "phoneNumberPlaceholder": "Enter your phone number",
+    "savePhone": "Save Phone Number",
+    "saving": "Saving...",
+    "updateSuccess": "Profile updated successfully",
+    "dangerZone": "Danger Zone",
+    "deleteWarning": "Deleting your account will permanently remove all your data, including your products and favorites.",
+    "deleteAccount": "Delete Account",
+    "confirmDeleteTitle": "Delete Account?",
+    "confirmDeleteMessage": "Are you sure you want to delete your account? This action cannot be undone. All your products will be deleted.",
+    "confirmDelete": "Yes, Delete My Account",
+    "deleting": "Deleting...",
+    "errors": {
+      "updateFailed": "Failed to update profile",
+      "deleteFailed": "Failed to delete account",
+      "invalidPhone": "Invalid phone number. Use format: +40 123 456 789 or 0712345678"
     }
   },
   "productDetail": {
